@@ -28,53 +28,39 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-
 'use strict';
 
-const Router = require('koa-router');
+const swaggerAutogen = require('swagger-autogen')();
 
-/* Place to import all nested routers below */
-const healthRouter = require('./health').createRouter();
-const verifyAttestationEvidenceRouter = require('./v1/verifyAttestationEvidence').createRouter();
+const outputFile = './swagger.json';
+const endpointsFiles = ['./simple-signing-service.js'];
 
-/* Place to compose service API below */
-const apiRouter = new Router();
-
-/*
-    #swagger.start
-    #swagger.path = '/health'
-    #swagger.method = 'get'
-    #swagger.description = 'Checks communication with dependent services'
-    #swagger.produces = ["application/json"]
-    #swagger.responses[200] = {
-        schema: {
-            '$ref': '#/definitions/PositiveHealthReport'
-        },
-        description: 'Health report',
-        headers: {
-            'Request-ID': {
-                description: 'Request ID',
-                type: 'string'
-            }
-        }
+const doc = {
+  info: {
+    version:     '1.0.0',
+    title:       'Simple Signing Service',
+    description: 'Documentation automatically generated from comments in SSS code'
+  },
+  host:        'localhost:8797',
+  basePath:    '/',
+  schemes:     ['https'],
+  consumes:    ['application/json'],
+  produces:    ['application/json'],
+  definitions: {
+    PositiveHealthReport: {
+      status:      'OK',
+      version:     '1.0.0',
+      lastChecked: '2023-03-07T10:30:29.282Z'
+    },
+    NegativeHealthReport: {
+      status:      'FAILED',
+      version:     '1.0.0',
+      lastChecked: '2023-03-07T10:30:29.282Z'
+    },
+    SignatureResponse: {
+      signature: 'M5iPd/7XrQlhweDBzKzou8kIamLAfDR/Hc1bC8RCEtxpDLlRhRWjxlUNpIwcDoxvRSt7fMQujO4JPaTV9+bTW3b74rhSmkiuTdxMnF7eYZl29cge6OFCpyz9M/c4U61IlYE8yAFoaSrbd0zHH0jUx//AzsD1Iw03P8YL2G/rUbBAtOGpZUF7hRmHDVGqGhjN6n0HIX4yMZ8CHQQTTziJokn+HSIN8tDQWV5DVFfCLFmUQ5Fyf3UIh07FmX+3HDukR/601FvbBvoaw3ERTjtLH30d+3Px/EVq8ZwRy6SCE9+3MJpIXFZttL4wO45mNEiHNdMPnBTBPJylN2a5mkz1Ww=='
     }
-    #swagger.responses[503] = {
-        schema: {
-            '$ref': '#/definitions/NegativeHealthReport'
-        },
-        description: 'Health report',
-        headers: {
-            'Request-ID': {
-                description: 'Request ID',
-                type: 'string'
-            }
-        }
-    }
-    #swagger.end
-*/
-apiRouter.use('/health', healthRouter.routes(), healthRouter.allowedMethods());
+  }
+};
 
-apiRouter.use('/attestation/sgx/dcap/v1/report', verifyAttestationEvidenceRouter.routes(), verifyAttestationEvidenceRouter.allowedMethods());
-
-
-module.exports = apiRouter;
+swaggerAutogen(outputFile, endpointsFiles, doc);
