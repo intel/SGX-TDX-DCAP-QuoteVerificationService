@@ -76,7 +76,6 @@ RUN rm -rf /usr/local/lib/node_modules/ \
 # Update the OS and install required dependencies
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get upgrade --assume-yes -o Dpkg::Options::="--force-confold" && \
-    DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes --no-install-recommends ca-certificates openssl && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Add QVS files from builder
