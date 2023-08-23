@@ -55,13 +55,13 @@ namespace intel::sgx::dcap::qvlwrapper {
 
     private:
         const std::string pemCertificate; // input
-        std::vector<uint8_t> fmspc; // output
-        dcap::parser::x509::SgxType sgxType; // output
-        bool dynamicPlatform; // output
-        bool cachedKeys; // output
-        bool smtEnabled; // output
-        std::vector<uint8_t> cpusvn; // output
-        std::uint32_t pcesvn; // output
+        std::vector<uint8_t> fmspc{}; // output
+        dcap::parser::x509::SgxType sgxType{}; // output
+        bool dynamicPlatform{}; // output
+        bool cachedKeys{}; // output
+        bool smtEnabled{}; // output
+        std::vector<uint8_t> cpusvn{}; // output
+        std::uint32_t pcesvn{}; // output
     };
 
 }

@@ -88,7 +88,7 @@ namespace intel::sgx::dcap::qvlwrapper {
         std::string tcbInfoSigningChainTrustedRoot;
 
         Status qvlStatus = STATUS_OK;
-        VerifyQuoteErrorSource errorSource;
+        VerifyQuoteErrorSource errorSource{};
     };
 
 }

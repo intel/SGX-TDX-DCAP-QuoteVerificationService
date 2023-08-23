@@ -69,7 +69,7 @@ Napi::Value GetPckCertificateData(const Napi::CallbackInfo &info) {
     auto deferred = Napi::Promise::Deferred::New(env);
     auto requestId = std::string(info[0].As<Napi::String>());
     auto pemCertificate = std::string(info[1].As<Napi::String>());
-    auto worker = new GetPckCertificateDataWorker(env, deferred, requestId, pemCertificate);
+    auto worker = new GetPckCertificateDataWorker(env, deferred, requestId, std::move(pemCertificate));
     worker->Queue();
     return deferred.Promise();
 }
@@ -79,7 +79,7 @@ Napi::Value GetCrlDistributionPoint(const Napi::CallbackInfo &info) {
     auto deferred = Napi::Promise::Deferred::New(env);
     auto requestId = std::string(info[0].As<Napi::String>());
     auto pemCertificate = std::string(info[1].As<Napi::String>());
-    auto worker = new GetCrlDistributionPointWorker(env, deferred, requestId, pemCertificate);
+    auto worker = new GetCrlDistributionPointWorker(env, deferred, requestId, std::move(pemCertificate));
     worker->Queue();
     return deferred.Promise();
 }
@@ -104,9 +104,10 @@ Napi::Value VerifyQuote(const Napi::CallbackInfo &info) {
     auto deferred = Napi::Promise::Deferred::New(env);
 
     auto worker = new VerifyQuoteWorker(env, deferred, requestId, quote.Data(), quote.Length(),
-                                        pckCert, tcbInfo, qeIdentity, pckCertIssuerCertChain,
-                                        tcbInfoIssuerCertChain, pckCrl, rootCaCrl, trustedRootCaPem,
-                                        tcbInfoSigningChainTrustedRoot);
+                                        std::move(pckCert), std::move(tcbInfo), std::move(qeIdentity),
+                                        std::move(pckCertIssuerCertChain), std::move(tcbInfoIssuerCertChain),
+                                        std::move(pckCrl), std::move(rootCaCrl), std::move(trustedRootCaPem),
+                                        std::move(tcbInfoSigningChainTrustedRoot));
 
     worker->Queue();
     return deferred.Promise();
