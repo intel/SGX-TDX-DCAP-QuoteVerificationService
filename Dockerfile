@@ -51,7 +51,7 @@ COPY src /qvs/src
 COPY configuration-default /qvs/configuration-default
 # build QVS
 RUN echo 'cmake_QVL_PATH=/qvl/Build/Release/dist' >> /qvs/src/.npmrc # workaround for npm 9+ https://github.com/npm/cli/issues/5852
-RUN cd /qvs/src && npm install
+RUN cd /qvs/src && npm install npm@latest && npm install
 # copy compiled bianries
 RUN mkdir -p /qvs/native/lib/ \
  && cp /qvl/Build/Release/dist/lib/*.so /qvs/native/lib/ \
