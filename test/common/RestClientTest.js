@@ -84,7 +84,7 @@ describe('RestClientTests', () => {
         it('execution flow during requesting health method', async() => {
             // GIVEN
             const defaultBody = { testField: 'testFieldValue' };
-            const responseFake = sinon.fake.resolves(TestContext.okJson200(defaultBody));
+            const responseFake = sinon.stub().resolves(TestContext.okJson200(defaultBody));
             const context = new TestContext(responseFake);
             const target = new context.RestClient('MTLS', '127.0.0.1', 'aPort', 2, 0, 3, 'cert.crt', 'cert.key', ['CA/ca.crt']);
             // WHEN
@@ -94,7 +94,7 @@ describe('RestClientTests', () => {
             assert.deepEqual(result.body, defaultBody);
             assert.equal(context.mockCertificates.callCount, 1);
             assert.equal(context.mockReadfile.callCount, 3);
-            assert.equal(responseFake.callCount, 1);
+            assert(responseFake.withArgs(sinon.match({ url: 'https://127.0.0.1:aPort/health' }), '').calledOnce);
         });
 
         it('error during requesting health method - internal error', async() => {
