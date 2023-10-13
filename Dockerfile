@@ -34,6 +34,17 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
  && apt-get upgrade --assume-yes -o Dpkg::Options::="--force-confold" \
  && apt-get install --assume-yes --no-install-recommends ca-certificates build-essential cmake
+
+# build OpenSSL FIPS provider (Latest FIPS validated version as of writing is 3.0.8)
+RUN apt install wget \
+ && wget https://github.com/openssl/openssl/releases/download/openssl-3.0.8/openssl-3.0.8.tar.gz -O /tmp/openssl.tar.gz \
+ && echo "6c13d2bf38fdf31eac3ce2a347073673f5d63263398f1f69d0df4a41253e4b3e /tmp/openssl.tar.gz" | sha256sum --check \
+ && mkdir /tmp/openssl && cd /tmp/openssl \
+ && tar -xzf /tmp/openssl.tar.gz --strip-components=1 -C /tmp/openssl \
+ && ./Configure enable-fips && make -j${nproc} \
+ && mkdir /tmp/fips && cp /tmp/openssl/providers/fips.so /tmp/fips && cp /tmp/openssl/providers/fipsmodule.cnf /tmp/fips \
+ && rm -rf /tmp/openssl.tar.gz /tmp/openssl
+
 # copy QVL sources
 COPY build/qvls /qvl
 # build and test QVL
@@ -82,9 +93,12 @@ RUN apt-get update && \
 COPY --from=qvs-builder --chown=node:node qvs/native /QVS/native
 COPY --from=qvs-builder --chown=node:node qvs/configuration-default/config.yml /QVS/configuration-default/config.yml
 COPY --from=qvs-builder --chown=node:node qvs/src /QVS/src
+COPY --from=qvl-builder --chown=node:node tmp/fips /QVS/src/fips
 
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/QVS/native/lib \
-    NODE_ENV=production
+    NODE_ENV=production \
+    OPENSSL_CONF=/QVS/src/fips/openssl.cnf \
+    OPENSSL_MODULES=/QVS/src/fips
 USER node
-ENTRYPOINT ["nodejs", "/QVS/src/bootstrap.js"]
+ENTRYPOINT ["nodejs", "--enable-fips", "/QVS/src/bootstrap.js"]
 
