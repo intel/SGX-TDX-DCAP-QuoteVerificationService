@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Copyright (c) 2022, Intel Corporation
+# Copyright (c) 2023, Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,54 +28,25 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-
-function fail {
-    printf '%s\n' "$1" >&2 ## Send message to stderr.
-    exit "${2-1}" ## Return a code specified by $2, or 1 by default.
-}
-
 # Get absolute path to the script itself
-SCRIPT_DIR="$(cd "$(dirname "$0")" || exit 1; pwd)"
+QVS_DIR="$(cd "$(dirname "$0")" || exit 1; pwd)"
 
-# Check if QVL path has been provided
-if [ -z "$1" ]
-  then
-    QVL_PATH="$(cd "$(dirname "$SCRIPT_DIR"/../QVL/Src)" || exit 2; pwd)/Src"
-else
-  QVL_PATH="$(cd "$(dirname "$1")" || exit 2; pwd)/$(basename "$1")"
-fi
+source ${QVS_DIR}/configUtils.sh
 
-echo "QVL_PATH=$QVL_PATH"
-cd "$QVL_PATH" || fail "Failed to access QVL path" 2
+# Prepare QVS certs
+pushd ${QVS_DIR}/configuration-default/certificates || fail "Failed to access QVS certificates dir" 2
+prepareSelfSignedCert "qvs-" '/C=US/O=Example/CN=QVS HTTPS'
+prepareSelfSignedCert "qvs-to-sss-client-" '/C=US/O=Example/CN=QVS to SSS MTLS'
+popd || fail "Failed leave QVS certificates dir" 3
 
-# Check if QVL_PATH contains absolute path
-case $QVL_PATH in
-     /*) ;;
-     *) fail "Absolute path to QVL sources should be provided" 3 ;;
-esac
-
-# Create local copy of QVL sources for Docker context
-copyQvlSources() {
-  mkdir -p "$SCRIPT_DIR/build"
-  cp -R "$QVL_PATH" "$SCRIPT_DIR/build/qvls"
-  rm -rf "$SCRIPT_DIR/build/qvls/Build" "$SCRIPT_DIR"/build/qvls/cmake-build*
-}
-
-if ! copyQvlSources "$@"; then
-    fail "Error when copying QVL" 5
-fi
-
-# Build Docker Image
-function buildDocker() {
-  docker build "$SCRIPT_DIR" -t qvs
-}
-
-if ! buildDocker; then
-    fail "Error when building Docker image" 7
-fi
-
-pushd ${SCRIPT_DIR}/samples/simple-signing-service || fail "Failed to access SSS dir" 4
-./build.sh
+# Prepare SSS certs and run docker
+pushd ${QVS_DIR}/samples/simple-signing-service/ || fail "Failed to access SSS dir" 4
+./prepareCerts.sh
+./runSSS.sh
 popd || fail "Failed leave SSS dir" 5
 
-echo "Build - Done"
+#Run QVS Container
+./runQVS.sh
+
+echo "RunAll - Done."
+

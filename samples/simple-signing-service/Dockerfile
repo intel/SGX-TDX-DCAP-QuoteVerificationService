@@ -1,7 +1,5 @@
-#!/bin/bash
-
 #
-# Copyright (c) 2022, Intel Corporation
+# Copyright (c) 2023, Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,53 +27,31 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
-function fail {
-    printf '%s\n' "$1" >&2 ## Send message to stderr.
-    exit "${2-1}" ## Return a code specified by $2, or 1 by default.
-}
+FROM node:lts-slim
 
-# Get absolute path to the script itself
-SCRIPT_DIR="$(cd "$(dirname "$0")" || exit 1; pwd)"
+LABEL description="Simple Signing Service"
 
-# Check if QVL path has been provided
-if [ -z "$1" ]
-  then
-    QVL_PATH="$(cd "$(dirname "$SCRIPT_DIR"/../QVL/Src)" || exit 2; pwd)/Src"
-else
-  QVL_PATH="$(cd "$(dirname "$1")" || exit 2; pwd)/$(basename "$1")"
-fi
+# Update the OS and install required dependencies
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get upgrade --assume-yes -o Dpkg::Options::="--force-confold" && \
+    DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes --no-install-recommends ca-certificates openssl && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-echo "QVL_PATH=$QVL_PATH"
-cd "$QVL_PATH" || fail "Failed to access QVL path" 2
+# Add SSS
+ENV NODE_ENV=production
+RUN mkdir /SSS
+COPY --chown=node:node package.json simple-signing-service.js swagger.js swagger.json /SSS/
 
-# Check if QVL_PATH contains absolute path
-case $QVL_PATH in
-     /*) ;;
-     *) fail "Absolute path to QVL sources should be provided" 3 ;;
-esac
+WORKDIR /SSS
+RUN npm install
 
-# Create local copy of QVL sources for Docker context
-copyQvlSources() {
-  mkdir -p "$SCRIPT_DIR/build"
-  cp -R "$QVL_PATH" "$SCRIPT_DIR/build/qvls"
-  rm -rf "$SCRIPT_DIR/build/qvls/Build" "$SCRIPT_DIR"/build/qvls/cmake-build*
-}
+# Remove Node package managers and its dependencies and clear apt cache
+RUN rm -rf /usr/local/lib/node_modules/ \
+    && rm -rf /usr/local/bin/npm \
+    && rm -rf /usr/local/bin/npx \
+    && rm -rf /opt \
+    && rm -rf /var/cache/apt/archives
+    
+USER node
 
-if ! copyQvlSources "$@"; then
-    fail "Error when copying QVL" 5
-fi
-
-# Build Docker Image
-function buildDocker() {
-  docker build "$SCRIPT_DIR" -t qvs
-}
-
-if ! buildDocker; then
-    fail "Error when building Docker image" 7
-fi
-
-pushd ${SCRIPT_DIR}/samples/simple-signing-service || fail "Failed to access SSS dir" 4
-./build.sh
-popd || fail "Failed leave SSS dir" 5
-
-echo "Build - Done"
+ENTRYPOINT ["node", "/SSS/simple-signing-service.js"]
