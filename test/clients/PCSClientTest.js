@@ -93,16 +93,17 @@ describe('PCSClient tests', () => {
             const testCtx = new TestContext();
             const reqId = 'requestId';
             const fmspc = 'fmspc';
+            const update = 'standard';
             const mockedResponse = { status: 200, body: 'body', headers: ['header'] };
             testCtx.restClient.getRequestPromisedStub.resolves(mockedResponse);
             const target = await testCtx.getTarget();
             // WHEN
-            const response = await target.getSgxTcbInfo(fmspc, reqId, testCtx.logger);
+            const response = await target.getSgxTcbInfo(fmspc, update, reqId, testCtx.logger);
             // THEN
             assert.deepStrictEqual(response, mockedResponse);
             helpers.assertMockFirstCalledWithArgs(testCtx.restClient.getRequestPromisedStub,
-                reqId, testCtx.logger, null, '/sgx/certification/v4/tcb', {}, { fmspc });
-            helpers.assertMockFirstCalledWithArgs(testCtx.nodeCache.setStub, fmspc, mockedResponse);
+                reqId, testCtx.logger, null, '/sgx/certification/v4/tcb', {}, { fmspc, update });
+            helpers.assertMockFirstCalledWithArgs(testCtx.nodeCache.setStub, fmspc + update, mockedResponse);
             assert.equal(testCtx.logger.info.callCount, 1);
         });
 
@@ -110,34 +111,37 @@ describe('PCSClient tests', () => {
             // GIVEN
             const testCtx = new TestContext();
             const fmspc = 'fmspc';
+            const update = 'standard';
             const reqId = 'requestId';
             const mockedResponse = { status: 200, body: 'body', headers: ['header'] };
             testCtx.nodeCache.getStub.resolves(mockedResponse);
             const target = await testCtx.getTarget();
             // WHEN
-            const response = await target.getSgxTcbInfo(fmspc, reqId, testCtx.logger);
+            const response = await target.getSgxTcbInfo(fmspc, update, reqId, testCtx.logger);
             // THEN
             assert.deepStrictEqual(response, mockedResponse);
             assert.equal(testCtx.restClient.getRequestPromisedStub.callCount, 0);
             assert.equal(testCtx.nodeCache.setStub.callCount, 0);
+            helpers.assertMockCalledOnceWithArgs(testCtx.nodeCache.getStub, fmspc + update);
             helpers.assertMockFirstCalledWithArgs(testCtx.logger.info,
-                `SGX TcbInfo for FMSPC=${fmspc} taken from cache`);
+                `SGX TcbInfo for FMSPC=${fmspc} with UpdateType=${update} taken from cache`);
         });
 
         it('error not cached', async() => {
             // GIVEN
             const testCtx = new TestContext();
             const fmspc = 'fmspc';
+            const update = 'standard';
             const reqId = 'requestId';
             const mockedResponse = { status: 500, body: 'body', headers: ['header'] };
             testCtx.restClient.getRequestPromisedStub.rejects(mockedResponse);
             const target = await testCtx.getTarget();
             // WHEN
-            const response = await target.getSgxTcbInfo(fmspc, reqId, testCtx.logger);
+            const response = await target.getSgxTcbInfo(fmspc, update, reqId, testCtx.logger);
             // THEN
             assert.deepStrictEqual(response, mockedResponse);
             helpers.assertMockFirstCalledWithArgs(testCtx.restClient.getRequestPromisedStub,
-                reqId, testCtx.logger, null, '/sgx/certification/v4/tcb', {}, { fmspc });
+                reqId, testCtx.logger, null, '/sgx/certification/v4/tcb', {}, { fmspc, update });
             assert.equal(testCtx.nodeCache.setStub.callCount, 0);
             assert.equal(testCtx.logger.info.callCount, 0);
         });
@@ -148,17 +152,18 @@ describe('PCSClient tests', () => {
             // GIVEN
             const testCtx = new TestContext();
             const reqId = 'requestId';
+            const update = 'standard';
             const fmspc = 'fmspc';
             const mockedResponse = { status: 200, body: 'body', headers: ['header'] };
             testCtx.restClient.getRequestPromisedStub.resolves(mockedResponse);
             const target = await testCtx.getTarget();
             // WHEN
-            const response = await target.getTdxTcbInfo(fmspc, reqId, testCtx.logger);
+            const response = await target.getTdxTcbInfo(fmspc, update, reqId, testCtx.logger);
             // THEN
             assert.deepStrictEqual(response, mockedResponse);
             helpers.assertMockFirstCalledWithArgs(testCtx.restClient.getRequestPromisedStub,
-                reqId, testCtx.logger, null, '/tdx/certification/v4/tcb', {}, { fmspc });
-            helpers.assertMockFirstCalledWithArgs(testCtx.nodeCache.setStub, fmspc, mockedResponse);
+                reqId, testCtx.logger, null, '/tdx/certification/v4/tcb', {}, { fmspc, update });
+            helpers.assertMockFirstCalledWithArgs(testCtx.nodeCache.setStub, fmspc + update, mockedResponse);
             assert.equal(testCtx.logger.info.callCount, 1);
         });
 
@@ -166,34 +171,37 @@ describe('PCSClient tests', () => {
             // GIVEN
             const testCtx = new TestContext();
             const fmspc = 'fmspc';
+            const update = 'standard';
             const reqId = 'requestId';
             const mockedResponse = { status: 200, body: 'body', headers: ['header'] };
             testCtx.nodeCache.getStub.resolves(mockedResponse);
             const target = await testCtx.getTarget();
             // WHEN
-            const response = await target.getTdxTcbInfo(fmspc, reqId, testCtx.logger);
+            const response = await target.getTdxTcbInfo(fmspc, update, reqId, testCtx.logger);
             // THEN
             assert.deepStrictEqual(response, mockedResponse);
             assert.equal(testCtx.restClient.getRequestPromisedStub.callCount, 0);
             assert.equal(testCtx.nodeCache.setStub.callCount, 0);
+            helpers.assertMockCalledOnceWithArgs(testCtx.nodeCache.getStub, fmspc + update);
             helpers.assertMockFirstCalledWithArgs(testCtx.logger.info,
-                `TDX TcbInfo for FMSPC=${fmspc} taken from cache`);
+                `TDX TcbInfo for FMSPC=${fmspc} with UpdateType=${update} taken from cache`);
         });
 
         it('error not cached', async() => {
             // GIVEN
             const testCtx = new TestContext();
             const fmspc = 'fmspc';
+            const update = 'standard';
             const reqId = 'requestId';
             const mockedResponse = { status: 500, body: 'body', headers: ['header'] };
             testCtx.restClient.getRequestPromisedStub.rejects(mockedResponse);
             const target = await testCtx.getTarget();
             // WHEN
-            const response = await target.getTdxTcbInfo(fmspc, reqId, testCtx.logger);
+            const response = await target.getTdxTcbInfo(fmspc, update, reqId, testCtx.logger);
             // THEN
             assert.deepStrictEqual(response, mockedResponse);
             helpers.assertMockFirstCalledWithArgs(testCtx.restClient.getRequestPromisedStub,
-                reqId, testCtx.logger, null, '/tdx/certification/v4/tcb', {}, { fmspc });
+                reqId, testCtx.logger, null, '/tdx/certification/v4/tcb', {}, { fmspc, update });
             assert.equal(testCtx.nodeCache.setStub.callCount, 0);
             assert.equal(testCtx.logger.info.callCount, 0);
         });
@@ -203,49 +211,53 @@ describe('PCSClient tests', () => {
         it('response saved to cache', async() => {
             // GIVEN
             const testCtx = new TestContext();
+            const update = 'standard';
             const reqId = 'requestId';
             const mockedResponse = { status: 200, body: 'body', headers: ['header'] };
             testCtx.restClient.getRequestPromisedStub.resolves(mockedResponse);
             const target = await testCtx.getTarget();
             // WHEN
-            const response = await target.getSgxQeIdentity(reqId, testCtx.logger);
+            const response = await target.getSgxQeIdentity(update, reqId, testCtx.logger);
             // THEN
             assert.deepStrictEqual(response, mockedResponse);
             helpers.assertMockFirstCalledWithArgs(testCtx.restClient.getRequestPromisedStub,
-                reqId, testCtx.logger, null, '/sgx/certification/v4/qe/identity');
-            helpers.assertMockFirstCalledWithArgs(testCtx.nodeCache.setStub, 'sgxQeIdentity', mockedResponse);
+                reqId, testCtx.logger, null, '/sgx/certification/v4/qe/identity', {}, { update });
+            helpers.assertMockFirstCalledWithArgs(testCtx.nodeCache.setStub, update, mockedResponse);
             assert.equal(testCtx.logger.info.callCount, 1);
         });
 
         it('response read from cache', async() => {
             // GIVEN
             const testCtx = new TestContext();
+            const update = 'standard';
             const reqId = 'requestId';
             const mockedResponse = { status: 200, body: 'body', headers: ['header'] };
             testCtx.nodeCache.getStub.resolves(mockedResponse);
             const target = await testCtx.getTarget();
             // WHEN
-            const response = await target.getSgxQeIdentity(reqId, testCtx.logger);
+            const response = await target.getSgxQeIdentity(update, reqId, testCtx.logger);
             // THEN
             assert.deepStrictEqual(response, mockedResponse);
             assert.equal(testCtx.restClient.getRequestPromisedStub.callCount, 0);
             assert.equal(testCtx.nodeCache.setStub.callCount, 0);
-            helpers.assertMockFirstCalledWithArgs(testCtx.logger.info, 'SGX QeIdentity taken from cache');
+            helpers.assertMockCalledOnceWithArgs(testCtx.nodeCache.getStub, update);
+            helpers.assertMockFirstCalledWithArgs(testCtx.logger.info, `SGX QeIdentity with UpdateType=${update} taken from cache`);
         });
 
         it('error not cached', async() => {
             // GIVEN
             const testCtx = new TestContext();
+            const update = 'standard';
             const reqId = 'requestId';
             const mockedResponse = { status: 500, body: 'body', headers: ['header'] };
             testCtx.restClient.getRequestPromisedStub.rejects(mockedResponse);
             const target = await testCtx.getTarget();
             // WHEN
-            const response = await target.getSgxQeIdentity(reqId, testCtx.logger);
+            const response = await target.getSgxQeIdentity(update, reqId, testCtx.logger);
             // THEN
             assert.deepStrictEqual(response, mockedResponse);
             helpers.assertMockFirstCalledWithArgs(testCtx.restClient.getRequestPromisedStub,
-                reqId, testCtx.logger, null, '/sgx/certification/v4/qe/identity');
+                reqId, testCtx.logger, null, '/sgx/certification/v4/qe/identity', {}, { update });
             assert.equal(testCtx.nodeCache.setStub.callCount, 0);
             assert.equal(testCtx.logger.info.callCount, 0);
         });
@@ -255,49 +267,53 @@ describe('PCSClient tests', () => {
         it('response saved to cache', async() => {
             // GIVEN
             const testCtx = new TestContext();
+            const update = 'standard';
             const reqId = 'requestId';
             const mockedResponse = { status: 200, body: 'body', headers: ['header'] };
             testCtx.restClient.getRequestPromisedStub.resolves(mockedResponse);
             const target = await testCtx.getTarget();
             // WHEN
-            const response = await target.getTdxQeIdentity(reqId, testCtx.logger);
+            const response = await target.getTdxQeIdentity(update, reqId, testCtx.logger);
             // THEN
             assert.deepStrictEqual(response, mockedResponse);
             helpers.assertMockFirstCalledWithArgs(testCtx.restClient.getRequestPromisedStub,
-                reqId, testCtx.logger, null, '/tdx/certification/v4/qe/identity');
-            helpers.assertMockFirstCalledWithArgs(testCtx.nodeCache.setStub, 'tdxQeIdentity', mockedResponse);
+                reqId, testCtx.logger, null, '/tdx/certification/v4/qe/identity', {}, { update });
+            helpers.assertMockFirstCalledWithArgs(testCtx.nodeCache.setStub, update, mockedResponse);
             assert.equal(testCtx.logger.info.callCount, 1);
         });
 
         it('response read from cache', async() => {
             // GIVEN
             const testCtx = new TestContext();
+            const update = 'standard';
             const reqId = 'requestId';
             const mockedResponse = { status: 200, body: 'body', headers: ['header'] };
             testCtx.nodeCache.getStub.resolves(mockedResponse);
             const target = await testCtx.getTarget();
             // WHEN
-            const response = await target.getTdxQeIdentity(reqId, testCtx.logger);
+            const response = await target.getTdxQeIdentity(update, reqId, testCtx.logger);
             // THEN
             assert.deepStrictEqual(response, mockedResponse);
             assert.equal(testCtx.restClient.getRequestPromisedStub.callCount, 0);
             assert.equal(testCtx.nodeCache.setStub.callCount, 0);
-            helpers.assertMockFirstCalledWithArgs(testCtx.logger.info, 'TDX QeIdentity taken from cache');
+            helpers.assertMockCalledOnceWithArgs(testCtx.nodeCache.getStub, update);
+            helpers.assertMockFirstCalledWithArgs(testCtx.logger.info, `TDX QeIdentity with UpdateType=${update} taken from cache`);
         });
 
         it('error not cached', async() => {
             // GIVEN
             const testCtx = new TestContext();
+            const update = 'standard';
             const reqId = 'requestId';
             const mockedResponse = { status: 500, body: 'body', headers: ['header'] };
             testCtx.restClient.getRequestPromisedStub.rejects(mockedResponse);
             const target = await testCtx.getTarget();
             // WHEN
-            const response = await target.getTdxQeIdentity(reqId, testCtx.logger);
+            const response = await target.getTdxQeIdentity(update, reqId, testCtx.logger);
             // THEN
             assert.deepStrictEqual(response, mockedResponse);
             helpers.assertMockFirstCalledWithArgs(testCtx.restClient.getRequestPromisedStub,
-                reqId, testCtx.logger, null, '/tdx/certification/v4/qe/identity');
+                reqId, testCtx.logger, null, '/tdx/certification/v4/qe/identity', {}, { update });
             assert.equal(testCtx.nodeCache.setStub.callCount, 0);
             assert.equal(testCtx.logger.info.callCount, 0);
         });
