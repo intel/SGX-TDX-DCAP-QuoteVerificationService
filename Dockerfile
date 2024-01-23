@@ -33,11 +33,16 @@ ENV DEBIAN_FRONTEND=noninteractive
 # install QVL dependencies
 RUN apt-get update \
  && apt-get upgrade --assume-yes -o Dpkg::Options::="--force-confold" \
- && apt-get install --assume-yes --no-install-recommends ca-certificates build-essential cmake
+ && apt-get install --assume-yes --no-install-recommends ca-certificates=\* build-essential=\* cmake=\* \
+ && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # build OpenSSL FIPS provider (Latest FIPS validated version as of writing is 3.0.8)
-RUN apt install wget \
- && wget https://github.com/openssl/openssl/releases/download/openssl-3.0.8/openssl-3.0.8.tar.gz -O /tmp/openssl.tar.gz \
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+# hadolint ignore=SC2086,DL3003
+RUN apt-get update \
+ && apt-get install --assume-yes --no-install-recommends wget=\* \
+ && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+ && wget --progress=dot:giga https://github.com/openssl/openssl/releases/download/openssl-3.0.8/openssl-3.0.8.tar.gz -O /tmp/openssl.tar.gz \
  && echo "6c13d2bf38fdf31eac3ce2a347073673f5d63263398f1f69d0df4a41253e4b3e /tmp/openssl.tar.gz" | sha256sum --check \
  && mkdir /tmp/openssl && cd /tmp/openssl \
  && tar -xzf /tmp/openssl.tar.gz --strip-components=1 -C /tmp/openssl \
@@ -48,13 +53,15 @@ RUN apt install wget \
 # copy QVL sources
 COPY build/qvls /qvl
 # build and test QVL
-RUN cd /qvl && ./runUT -DBUILD_LOGS=ON
+WORKDIR /qvl
+RUN ./runUT -DBUILD_LOGS=ON
 
 FROM node:lts-slim AS qvs-builder
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
  && apt-get upgrade --assume-yes -o Dpkg::Options::="--force-confold" \
- && apt-get install --assume-yes --no-install-recommends ca-certificates build-essential cmake
+ && apt-get install --assume-yes --no-install-recommends ca-certificates=\* build-essential=\* cmake=\* \
+ && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
  
 COPY --from=qvl-builder --chown=node:node /qvl /qvl
 # copy QVS source files
@@ -62,7 +69,8 @@ COPY src /qvs/src
 COPY configuration-default /qvs/configuration-default
 # build QVS
 RUN echo 'cmake_QVL_PATH=/qvl/Build/Release/dist' >> /qvs/src/.npmrc # workaround for npm 9+ https://github.com/npm/cli/issues/5852
-RUN cd /qvs/src && npm install npm@latest && npm install
+WORKDIR /qvs/src
+RUN npm install npm@latest && npm install
 # copy compiled bianries
 RUN mkdir -p /qvs/native/lib/ \
  && cp /qvl/Build/Release/dist/lib/*.so /qvs/native/lib/ \
@@ -71,7 +79,8 @@ RUN mkdir -p /qvs/native/lib/ \
 # copy QVS test files
 COPY test /qvs/test
 # test QVS
-RUN cd /qvs/test && npm install && NODE_ENV=production npm test
+WORKDIR /qvs/test
+RUN npm install && NODE_ENV=production npm test
 
 FROM node:lts-slim
 
@@ -87,7 +96,7 @@ RUN rm -rf /usr/local/lib/node_modules/ \
 # Update the OS and install required dependencies
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get upgrade --assume-yes -o Dpkg::Options::="--force-confold" && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* 
 
 # Add QVS files from builder
 COPY --from=qvs-builder --chown=node:node qvs/native /QVS/native
@@ -101,4 +110,4 @@ ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/QVS/native/lib \
     OPENSSL_MODULES=/QVS/src/fips
 USER node
 ENTRYPOINT ["nodejs", "--enable-fips", "/QVS/src/bootstrap.js"]
-
+WORKDIR "/QVS"

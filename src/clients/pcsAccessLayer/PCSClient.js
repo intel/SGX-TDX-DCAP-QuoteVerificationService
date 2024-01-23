@@ -98,6 +98,7 @@ function saveInCache(cacheName, key, value, logger) {
 /**
  * Retrieves SGX TcbInfo for provided fmspc from cache or directly from PCS
  * @param {string} fmspc
+ * @param {string} updateType
  * @param {string} requestId
  * @param {Logger} logger
  * @returns {Promise<{
@@ -106,23 +107,25 @@ function saveInCache(cacheName, key, value, logger) {
  *  headers: Object.<string, string>
  * }|Error>}
  */
-async function getSgxTcbInfo(fmspc, requestId, logger) {
+async function getSgxTcbInfo(fmspc, updateType, requestId, logger) {
     const path = '/sgx/certification/v4/tcb';
+    const cacheKey = fmspc + updateType;
 
-    let response = cache.sgxTcbInfo.get(fmspc);
+    let response = cache.sgxTcbInfo.get(cacheKey);
     if (!response) {
         try {
             response = await client.getRequestPromised(requestId, logger, null, path, {}, {
-                fmspc
+                fmspc,
+                update: updateType
             });
-            saveInCache('sgxTcbInfo', fmspc, response, logger);
+            saveInCache('sgxTcbInfo', cacheKey, response, logger);
         }
         catch (error) {
             response = error;
         }
     }
     else {
-        logger.info(`SGX TcbInfo for FMSPC=${fmspc} taken from cache`);
+        logger.info(`SGX TcbInfo for FMSPC=${fmspc} with UpdateType=${updateType} taken from cache`);
     }
 
     return response;
@@ -131,6 +134,7 @@ async function getSgxTcbInfo(fmspc, requestId, logger) {
 /**
  * Retrieves TDX TcbInfo for provided fmspc from cache or directly from PCS
  * @param {string} fmspc
+ * @param {string} updateType
  * @param {string} requestId
  * @param {Logger} logger
  * @returns {Promise<{
@@ -139,23 +143,25 @@ async function getSgxTcbInfo(fmspc, requestId, logger) {
  *  headers: Object.<string, string>
  * }|Error>}
  */
-async function getTdxTcbInfo(fmspc, requestId, logger) {
+async function getTdxTcbInfo(fmspc, updateType, requestId, logger) {
     const path = '/tdx/certification/v4/tcb';
+    const cacheKey = fmspc + updateType;
 
-    let response = cache.tdxTcbInfo.get(fmspc);
+    let response = cache.tdxTcbInfo.get(cacheKey);
     if (!response) {
         try {
             response = await client.getRequestPromised(requestId, logger, null, path, {}, {
-                fmspc
+                fmspc,
+                update: updateType
             });
-            saveInCache('tdxTcbInfo', fmspc, response, logger);            
+            saveInCache('tdxTcbInfo', cacheKey, response, logger);
         }
         catch (error) {
             response = error;
         }
     }
     else {
-        logger.info(`TDX TcbInfo for FMSPC=${fmspc} taken from cache`);
+        logger.info(`TDX TcbInfo for FMSPC=${fmspc} with UpdateType=${updateType} taken from cache`);
     }
 
     return response;
@@ -163,6 +169,7 @@ async function getTdxTcbInfo(fmspc, requestId, logger) {
 
 /**
  * Retrieves SGX QE Identity from cache or directly from PCS
+ * @param {string} updateType
  * @param {string} requestId
  * @param {Logger} logger
  * @returns {Promise<{
@@ -171,14 +178,15 @@ async function getTdxTcbInfo(fmspc, requestId, logger) {
  *  headers: Object.<string, string>
  * }|Error>}
  */
-async function getSgxQeIdentity(requestId, logger) {
+async function getSgxQeIdentity(updateType, requestId, logger) {
     const path = '/sgx/certification/v4/qe/identity';
-    const cacheKey = 'sgxQeIdentity';
+    const cacheKey = updateType;
+    const queryParams = { update: updateType };
 
     let response = cache.sgxQeIdentity.get(cacheKey);
     if (!response) {
         try {
-            response = await client.getRequestPromised(requestId, logger, null, path);
+            response = await client.getRequestPromised(requestId, logger, null, path, {}, queryParams);
             saveInCache('sgxQeIdentity', cacheKey, response, logger);            
         }
         catch (error) {
@@ -186,7 +194,7 @@ async function getSgxQeIdentity(requestId, logger) {
         }
     }
     else {
-        logger.info('SGX QeIdentity taken from cache');
+        logger.info(`SGX QeIdentity with UpdateType=${updateType} taken from cache`);
     }
 
     return response;    
@@ -194,6 +202,7 @@ async function getSgxQeIdentity(requestId, logger) {
 
 /**
  * Retrieves TDX QE Identity from cache or directly from PCS
+ * @param {string} updateType
  * @param {string} requestId
  * @param {Logger} logger
  * @returns {Promise<{
@@ -202,14 +211,15 @@ async function getSgxQeIdentity(requestId, logger) {
  *  headers: Object.<string, string>
  * }|Error>}
  */
-async function getTdxQeIdentity(requestId, logger) {
+async function getTdxQeIdentity(updateType, requestId, logger) {
     const path = '/tdx/certification/v4/qe/identity';
-    const cacheKey = 'tdxQeIdentity';
+    const cacheKey = updateType;
+    const queryParams = { update: updateType };
 
     let response = cache.tdxQeIdentity.get(cacheKey);
     if (!response) {
         try {
-            response = await client.getRequestPromised(requestId, logger, null, path);
+            response = await client.getRequestPromised(requestId, logger, null, path, {}, queryParams);
             saveInCache('tdxQeIdentity', cacheKey, response, logger);
         }
         catch (error) {
@@ -217,7 +227,7 @@ async function getTdxQeIdentity(requestId, logger) {
         }
     }
     else {
-        logger.info('TDX QeIdentity taken from cache');
+        logger.info(`TDX QeIdentity with UpdateType=${updateType} taken from cache`);
     }
 
     return response;

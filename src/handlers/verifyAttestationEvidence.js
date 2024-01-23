@@ -96,6 +96,15 @@ async function verifyAttestationEvidence(ctx) {
         return;
     }
 
+
+    const updateType = ctx.query.update || 'standard';
+    const updateTypeValues = ['early', 'standard'];
+    if (!updateTypeValues.includes(updateType)) {
+        ctx.log.error(`Provided update is not one of ${updateTypeValues}: `, updateType);
+        ctx.status = 400;
+        return;
+    }
+
     const isvQuote = ctx.request.body.isvQuote;
     if (!_.isString(isvQuote) || !validator.isBase64(isvQuote)) {
         ctx.log.error('isvQuote is not provided or is not a base64 string: ', isvQuote);
@@ -128,8 +137,8 @@ async function verifyAttestationEvidence(ctx) {
         const getQeIdentity = (quoteType === 'SGX') ? pcs.getSgxQeIdentity : pcs.getTdxQeIdentity;
 
         const requestPromises = {
-            tcbInfoData: getTcbInfo(pckCertData.fmspc, ctx.reqId, ctx.log),
-            qeIdentity:  getQeIdentity(ctx.reqId, ctx.log),
+            tcbInfoData: getTcbInfo(pckCertData.fmspc, updateType, ctx.reqId, ctx.log),
+            qeIdentity:  getQeIdentity(updateType, ctx.reqId, ctx.log),
             pckCertCrl:  crl.getCrlFromDistributionPoint(pckCertCrlDistributionPoint, ctx.reqId, ctx.log),
             rootCrl:     crl.getCrlFromDistributionPoint(rootCaCrlDistributionPoint, ctx.reqId, ctx.log)
         };

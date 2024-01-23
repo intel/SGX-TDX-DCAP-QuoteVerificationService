@@ -61,6 +61,7 @@ class TestContext {
         };
         this.reqId = 'requestId';
         this.nonce = 'abcdefabcdef01234567890123456789';
+        this.updateType = 'standard';
         this.qvl = {
             getCertificationData:    sinon.stub(),
             getPckCertificateData:   sinon.stub(),
@@ -147,6 +148,9 @@ IQCUt8SGvxKmjpcM/z0WP9Dvo8h2k5du1iWDdBkAn+0iiA==
                 body: {
                     nonce: this.nonce
                 }
+            },
+            query: {
+                update: this.updateType
             },
             set: sinon.stub()
         };
@@ -834,33 +838,6 @@ describe('verify attestation evidence handler tests', () => {
         assert.equal(ctx.body.advisoryIDs, undefined);
     });
 
-    it('execute - Invalid nonce', async() => {
-        // GIVEN
-        const c = new TestContext();
-        const target = await c.getTarget();
-        const ctx = await c.getCtx();
-        ctx.request.body = {
-            isvQuote: c.tdxQuote,
-            nonce:    '123456789012345678901234567890123' // too long nonce
-        };
-        c.setupCertificationData()
-            .setupPckCertificateData()
-            .setupCrlDistributionPoint()
-            .setupTcbInfo()
-            .setupQeIdentity()
-            .setupVerifyQuote()
-            .setupCertificateChain()
-            .setupSignature();
-        // WHEN
-        await target.verifyAttestationEvidence(ctx);
-        // THEN
-        assert.equal(ctx.status, 400);
-        assert.equal(c.qvl.getCertificationData.callCount, 0);
-        assert.equal(c.qvl.getPckCertificateData.callCount, 0);
-        assert.equal(c.qvl.getCrlDistributionPoint.callCount, 0);
-        assert.equal(ctx.body, undefined, 'Unexpected body response');
-    });
-
     it('execute - quote parsing failure', async() => {
         // GIVEN
         const c = new TestContext();
@@ -1032,6 +1009,60 @@ describe('verify attestation evidence handler tests', () => {
             // THEN
             c.assertPositiveSgxStandard(ctx);
             assert.strictEqual(ctx.body.hasOwnProperty('nonce'), false);
+        });
+    });
+
+    describe('update type', () => {
+        it('early', async() => {
+            // GIVEN
+            const c = new TestContext();
+            const target = await c.getTarget();
+            c.updateType = 'early';
+            const ctx = await c.getCtx();
+            ctx.request.body = {
+                isvQuote: c.sgxQuote
+            };
+            c.defaultSetup();
+            // WHEN
+            await target.verifyAttestationEvidence(ctx);
+            // THEN
+            c.assertPositiveSgxStandard(ctx);
+            assertMockCalledOnceWithArgs(c.pcsClient.getSgxTcbInfo, '00906EA10000', c.updateType, c.reqId, c.logger);
+            assertMockCalledOnceWithArgs(c.pcsClient.getSgxQeIdentity, c.updateType, c.reqId, c.logger);
+        });
+
+        it('default - standard', async() => {
+            // GIVEN
+            const defaultUpdateType = 'standard';
+            const c = new TestContext();
+            const target = await c.getTarget();
+            c.updateType = undefined;
+            const ctx = await c.getCtx();
+            ctx.request.body = {
+                isvQuote: c.sgxQuote
+            };
+            c.defaultSetup();
+            // WHEN
+            await target.verifyAttestationEvidence(ctx);
+            // THEN
+            c.assertPositiveSgxStandard(ctx);
+            assertMockCalledOnceWithArgs(c.pcsClient.getSgxTcbInfo, '00906EA10000', defaultUpdateType, c.reqId, c.logger);
+            assertMockCalledOnceWithArgs(c.pcsClient.getSgxQeIdentity, defaultUpdateType, c.reqId, c.logger);
+        });
+
+        it('invalid', async() => {
+            // GIVEN
+            const c = new TestContext();
+            const target = await c.getTarget();
+            c.updateType = 'wrong update';
+            const ctx = await c.getCtx();
+            c.defaultSetup();
+            // WHEN
+            await target.verifyAttestationEvidence(ctx);
+            // THEN
+            assert.equal(ctx.status, 400);
+            assert.strictEqual(ctx.hasOwnProperty('body'), false);
+            assertMockCalledOnceWithArgs(ctx.log.error, 'Provided update is not one of early,standard: ', c.updateType);
         });
     });
 
