@@ -77,7 +77,14 @@ async function verifyAttestationEvidence(ctx) {
             description: 'Attestation Evidence Payload',
             schema: {
                 $ref: '#/definitions/AttestationEvidencePayload'
-            }            
+            }
+        }
+        #swagger.parameters['update'] = {
+            in: 'query',
+            description: 'Type of update to TCB Info and Enclave Identity.\nIf not provided standard is assumed.\n* early indicates an early access to updated TCB Info and Enclave Identity provided as part of a TCB recovery event (commonly the day of public disclosure of the items in scope)\n* standard indicates standard access to updated TCB Info and Enclave Identity provided as part of a TCB recovery event (commonly approximately 6 weeks after public disclosure of the items in scope)',
+            required: false,
+            type: 'string',
+            enum: ['standard', 'early']
         }
         #swagger.responses[400] = {
             description: 'Invalid Attestation Evidence Payload',
