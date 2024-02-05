@@ -1,7 +1,10 @@
 {
     "name": "quoteverificationservice-test",
     "scripts": {
-        "test": "mocha ./**/*.js"
+        "test": "nyc mocha './' --recursive --exclude 'node_modules/**/*' --exclude '?/**/*' --exclude 'build/**/*' --reporter 'node_modules/mocha-multi-reporters/index.js' --reporter-options 'configFile=../reporter_config.json'",
+        "lint-fix": "eslint --config ../.eslintrc --fix ..",
+        "lint": "eslint --config ../.eslintrc --format stylish --quiet ..",
+        "lint-report": "eslint --config ../.eslintrc --format checkstyle --output-file ../build/eslint_report.xml .."
     },
     "version": "1.0.0",
     "license": "SEE LICENSE IN RESPECTIVE FILES",
