@@ -76,6 +76,9 @@ RUN mkdir -p /qvs/native/lib/ \
  && cp /qvl/Build/Release/dist/lib/*.so /qvs/native/lib/ \
  && cp /qvs/src/qvl/cmake-build-release/Release/*.node /qvs/native/ \
  && rm -rf /qvs/src/qvl/cmake-build-release
+# audit
+RUN mkdir ../build && npm audit --omit=dev --json > ../build/NpmAuditReport.json
+
 # copy QVS test files
 COPY test /qvs/test
 COPY nyc.config.js .eslintrc reporter_config.json /qvs/
