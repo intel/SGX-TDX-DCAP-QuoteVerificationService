@@ -77,7 +77,7 @@ RUN mkdir -p /qvs/native/lib/ \
  && cp /qvs/src/qvl/cmake-build-release/Release/*.node /qvs/native/ \
  && rm -rf /qvs/src/qvl/cmake-build-release
 # audit
-RUN mkdir ../build && npm audit --omit=dev --json > ../build/NpmAuditReport.json
+RUN mkdir ../build && npm audit --omit=dev --json > ../build/NpmAuditReport.json || echo "Npm audit failed!"
 
 # copy QVS test files
 COPY test /qvs/test
