@@ -14,7 +14,7 @@ Service checks, that provided evidence comes from a genuine, non-revoked SGX/TDX
 
 ISV Quote Verification Backend potential structure is presented on the diagram above. 
 
-Quote Verification Service utilizes [QVL](../QVL) to perform it's business logic. It also communicates with Verification Collateral Distribution Services (PCS and CRL Distribution List) to obtain latest collaterals. When verification is done, report is generated and sent to a crypto provider - Verification Crypto Service (VCS) in order to be signed. 
+Quote Verification Service utilizes [QVL](https://github.com/intel/SGX-TDX-DCAP-QuoteVerificationLibrary) to perform it's business logic. It also communicates with Verification Collateral Distribution Services (PCS and CRL Distribution List) to obtain latest collaterals. When verification is done, report is generated and sent to a crypto provider - Verification Crypto Service (VCS) in order to be signed. 
 
 VCS is a service capable of storing (Secure Key Storage) and using cryptographic keys in a secure manner (for example, by utilizing Hardware Secure Module). It has to be provided and protected by ISV, as a part of it's Quote Verification Backend.
 Sample VCS implementation called [Simple Signing Service (SSS)](samples/simple-signing-service/README.md) has been created for demo purposes only - please do NOT use it in production environment.
@@ -30,6 +30,9 @@ QVS for demonstation purposes can be quickly configured and run with self-signed
  - [Docker](https://www.docker.com/) (tested with version 20.10.11)
     - ```$ curl -fsSL https://get.docker.com -o get-docker.sh```
     - ```$ sudo sh ./get-docker.sh```
+ - [jq](https://jqlang.github.io/jq/)
+    - ```$ sudo apt-get install jq``` (for Debian/Ubuntu)
+
 ### Build
  Execute ```./build.sh```. This script will build QVL, QVS and SSS.
  
@@ -52,7 +55,7 @@ Using docker builders:
  - [Docker](https://www.docker.com/) (tested with version 20.10.11)
 Without docker:
  - [Node.js](https://nodejs.org/en/) (tested with version 16.13.1) with `npm` and `cmake-js` addon
- - install prerequisites from [QVL](../QVL)
+ - install prerequisites from [QVL](https://github.com/intel/SGX-TDX-DCAP-QuoteVerificationLibrary)
 
 #### Install software dependencies
 For Ubuntu 18.04, the following command can be used to install all necessary software dependencies:
@@ -64,6 +67,8 @@ For Ubuntu 18.04, the following command can be used to install all necessary sof
 - Docker
   - ```$ curl -fsSL https://get.docker.com -o get-docker.sh```
   - ```$ sudo sh ./get-docker.sh```
+- [jq](https://jqlang.github.io/jq/)
+    - ```$ sudo apt-get install jq``` (for Debian/Ubuntu)
 
 ### Building on Linux
 The build was tested on Ubuntu 18.04 and 20.04.
