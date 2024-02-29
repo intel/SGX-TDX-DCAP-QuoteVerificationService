@@ -130,7 +130,7 @@ async function verifyAttestationEvidence(ctx) {
         pckCertData = await getPckCertificateData(ctx.reqId, pckCertPem);
         [pckCertCrlDistributionPoint, rootCaCrlDistributionPoint] = await Promise.all([pckCertPem, rootCaPem].map(cert => getCrlUrl(ctx.reqId, cert)));
     }
-    catch (error)  {
+    catch (error) {
         ctx.log.error(error);
         ctx.status = 400;
         return;
@@ -140,8 +140,8 @@ async function verifyAttestationEvidence(ctx) {
         const { quoteType } = readQuoteVersion(quote);
         const isvsvn = readIsvsvn(quote);
 
-        const getTcbInfo = (quoteType === 'SGX') ? pcs.getSgxTcbInfo : pcs.getTdxTcbInfo;
-        const getQeIdentity = (quoteType === 'SGX') ? pcs.getSgxQeIdentity : pcs.getTdxQeIdentity;
+        const getTcbInfo = quoteType === 'SGX' ? pcs.getSgxTcbInfo : pcs.getTdxTcbInfo;
+        const getQeIdentity = quoteType === 'SGX' ? pcs.getSgxQeIdentity : pcs.getTdxQeIdentity;
 
         const requestPromises = {
             tcbInfoData: getTcbInfo(pckCertData.fmspc, updateType, ctx.reqId, ctx.log),
@@ -190,7 +190,16 @@ async function verifyAttestationEvidence(ctx) {
         const cpusvn = pckCertData.cpusvn;
         const tdxsvn = readTdxsvn(quote);
 
-        if (['OK', 'TCB_OUT_OF_DATE', 'TCB_OUT_OF_DATE_AND_CONFIGURATION_NEEDED', 'CONFIGURATION_NEEDED', 'SW_HARDENING_NEEDED', 'CONFIGURATION_AND_SW_HARDENING_NEEDED'].includes(isvQuoteStatus)) {
+        if ([
+            'OK',
+            'TCB_OUT_OF_DATE',
+            'TCB_OUT_OF_DATE_AND_CONFIGURATION_NEEDED',
+            'CONFIGURATION_NEEDED',
+            'SW_HARDENING_NEEDED',
+            'CONFIGURATION_AND_SW_HARDENING_NEEDED',
+            'TD_RELAUNCH_ADVISED',
+            'TD_RELAUNCH_ADVISED_AND_CONFIGURATION_NEEDED'
+        ].includes(isvQuoteStatus)) {
             const matchedTcbInfoTcbLevel = matchTcbInfoTcbLevel(tcbInfo, cpusvn, pcesvn, tdxsvn);
             if (!matchedTcbInfoTcbLevel) {
                 ctx.log.error(`Could not match TCB level (${JSON.stringify(cpusvn)}|${pcesvn}|{${JSON.stringify(tdxsvn)}) from certificate/quote to any TCB level from TCB Info`);
@@ -207,18 +216,57 @@ async function verifyAttestationEvidence(ctx) {
             }
             ctx.log.info(`Matched Enclave TCB Level ${JSON.stringify(matchedEnclaveTcbTcbLevel)}`);
 
-            if (matchedTcbInfoTcbLevel.advisoryIDs || matchedEnclaveTcbTcbLevel.advisoryIDs) {
+            let matchedTdxModuleTcbLevel = {
+                advisoryIDs: null
+            };
+
+            if (tdxsvn && tdxsvn[1] > 0) {
+                const tdxModuleMajorVersion = tdxsvn[1];
+
+                const matchedTdxModuleIdentity = matchTdxModuleIdentity(tcbInfo, tdxModuleMajorVersion);
+                if (!matchedTdxModuleIdentity) {
+                    ctx.log.error(`Could not match TDX Module Major Version (${tdxModuleMajorVersion}) from quote to any TDX Module Identity from TCB Info`);
+                    ctx.status = 400;
+                    return;
+                }
+                ctx.log.info(`Matched TDX Module Identity ${JSON.stringify(matchedTdxModuleIdentity)}`);
+
+                const tdxModuleSvn = tdxsvn[0];
+                matchedTdxModuleTcbLevel = matchTdxModuleTcbLevel(matchedTdxModuleIdentity, tdxModuleSvn);
+                if (!matchedTdxModuleTcbLevel) {
+                    ctx.log.error(`Could not match TDX Module svn (${isvsvn}) from quote to any TCB level from TDX Module Identity`);
+                    ctx.status = 400;
+                    return;
+                }
+                ctx.log.info(`Matched TDX Module TcbLevel ${JSON.stringify(matchedTdxModuleTcbLevel)}`);
+            }
+            else {
+                ctx.log.info('Either quote is SGX or TDX Module Major Version is equal to 0 - TDX Module Identity will not be matched');
+            }
+
+            if (matchedTcbInfoTcbLevel.advisoryIDs || matchedEnclaveTcbTcbLevel.advisoryIDs || matchedTdxModuleTcbLevel.advisoryIDs) {
                 report.advisoryURL = 'https://security-center.intel.com';
-                const advisoryIds = collectAdvisoryIds(matchedTcbInfoTcbLevel, matchedEnclaveTcbTcbLevel);
+                const advisoryIds = collectAdvisoryIds(matchedTcbInfoTcbLevel, matchedEnclaveTcbTcbLevel, matchedTdxModuleTcbLevel);
                 if (!_.isEmpty(advisoryIds)) {
                     report.advisoryIDs = _.sortedUniq(advisoryIds.sort());
                 }
             }
 
-            if (['TCB_OUT_OF_DATE', 'TCB_OUT_OF_DATE_AND_CONFIGURATION_NEEDED'].includes(isvQuoteStatus)) {
+            if ([
+                'TCB_OUT_OF_DATE',
+                'TCB_OUT_OF_DATE_AND_CONFIGURATION_NEEDED',
+                'TD_RELAUNCH_ADVISED',
+                'TD_RELAUNCH_ADVISED_AND_CONFIGURATION_NEEDED'
+            ].includes(isvQuoteStatus)) {
+
                 const tcbComponentsOutOfDate = collectTcbComponentsOutOfDate(quoteType, tcbInfo, matchedTcbInfoTcbLevel);
+                if (matchedTdxModuleTcbLevel.tcbStatus === 'OutOfDate') { // tdxModule is OutOfDate
+                    tcbComponentsOutOfDate.push({ category: 'OS/VMM', type: 'TDX Module' });
+                }
+
                 if (!_.isEmpty(tcbComponentsOutOfDate)) {
                     report.tcbComponentsOutOfDate = tcbComponentsOutOfDate;
+                    ctx.log.info(`The following TcbComponentsOutOfDate have been selected: ${JSON.stringify(tcbComponentsOutOfDate)}`);
                 }
             }
         }
@@ -259,21 +307,23 @@ async function verifyAttestationEvidence(ctx) {
                 }
             }
          */
-        ctx.log.error(error);        
+        ctx.log.error(error);
         ctx.status = error.status || 500;
     }
 }
 
 /**
  * Concatenates and sorts advisoryIds from matched tcb levels
- * @param {TcbLevel} matchedTcbInfoTcbLevel - Tcb level from TcbInfo
- * @param {EnclaveTcbLevel} matchedEnclaveTcbTcbLevel - Tcb level from EnclaveTcb
+ * @param {...(TcbLevel|EnclaveTcbLevel|TdxModuleTcbLevel)} matchedTcbLevels - Tcb levels from TcbInfo, EnclaveTcb, and TdxModuleTcb
  * @return {Array.<string>}
  */
-function collectAdvisoryIds(matchedTcbInfoTcbLevel, matchedEnclaveTcbTcbLevel) {
+function collectAdvisoryIds(...matchedTcbLevels) {
     const advisoryIds = [];
-    addAdvisoryIdsToArray(advisoryIds, matchedTcbInfoTcbLevel);
-    addAdvisoryIdsToArray(advisoryIds, matchedEnclaveTcbTcbLevel);
+
+    matchedTcbLevels.forEach(level => {
+        addAdvisoryIdsToArray(advisoryIds, level);
+    });
+
     const sortedAdvisoryIds = _.sortedUniq(advisoryIds.sort());
     return sortedAdvisoryIds;
 }
@@ -281,7 +331,7 @@ function collectAdvisoryIds(matchedTcbInfoTcbLevel, matchedEnclaveTcbTcbLevel) {
 /**
  * Adds advisoryIds from tcbLevel to provided array
  * @param {Array.<string>} array
- * @param {TcbLevel|EnclaveTcbLevel} tcbLevel
+ * @param {TcbLevel|EnclaveTcbLevel|TdxModuleTcbLevel} tcbLevel
  */
 function addAdvisoryIdsToArray(array, tcbLevel) {
     const advisoryIDs = tcbLevel.advisoryIDs;
@@ -336,7 +386,7 @@ function parseStatus(status, source, log) {
         log.error('Invalid trusted root CA cert. Check config.');
     }
     else {
-        log.error('Unrecognized QVL status: ' + status);
+        log.error(`Unrecognized QVL status: ${status}`);
     }
 
     return { status: 500 };
@@ -349,27 +399,31 @@ function parseStatus(status, source, log) {
  */
 function getIsvQuoteStatus(status) {
     switch (status) {
-        case qvlStatus.STATUS_OK:
-            return 'OK';
-        case qvlStatus.STATUS_INVALID_QUOTE_SIGNATURE:
-            return 'SIGNATURE_INVALID';
-        case qvlStatus.STATUS_SGX_INTERMEDIATE_CA_REVOKED:
-        case qvlStatus.STATUS_SGX_PCK_REVOKED:
-        case qvlStatus.STATUS_PCK_REVOKED:
-        case qvlStatus.STATUS_TCB_REVOKED:
-            return 'REVOKED';
-        case qvlStatus.STATUS_TCB_OUT_OF_DATE:
-            return 'TCB_OUT_OF_DATE';
-        case qvlStatus.STATUS_TCB_CONFIGURATION_NEEDED:
-            return 'CONFIGURATION_NEEDED';
-        case qvlStatus.STATUS_TCB_OUT_OF_DATE_CONFIGURATION_NEEDED:
-            return 'TCB_OUT_OF_DATE_AND_CONFIGURATION_NEEDED';
-        case qvlStatus.STATUS_TCB_SW_HARDENING_NEEDED:
-            return 'SW_HARDENING_NEEDED';
-        case qvlStatus.STATUS_TCB_CONFIGURATION_AND_SW_HARDENING_NEEDED:
-            return 'CONFIGURATION_AND_SW_HARDENING_NEEDED';
-        default:
-            return null;
+    case qvlStatus.STATUS_OK:
+        return 'OK';
+    case qvlStatus.STATUS_INVALID_QUOTE_SIGNATURE:
+        return 'SIGNATURE_INVALID';
+    case qvlStatus.STATUS_SGX_INTERMEDIATE_CA_REVOKED:
+    case qvlStatus.STATUS_SGX_PCK_REVOKED:
+    case qvlStatus.STATUS_PCK_REVOKED:
+    case qvlStatus.STATUS_TCB_REVOKED:
+        return 'REVOKED';
+    case qvlStatus.STATUS_TCB_OUT_OF_DATE:
+        return 'TCB_OUT_OF_DATE';
+    case qvlStatus.STATUS_TCB_CONFIGURATION_NEEDED:
+        return 'CONFIGURATION_NEEDED';
+    case qvlStatus.STATUS_TCB_OUT_OF_DATE_CONFIGURATION_NEEDED:
+        return 'TCB_OUT_OF_DATE_AND_CONFIGURATION_NEEDED';
+    case qvlStatus.STATUS_TCB_SW_HARDENING_NEEDED:
+        return 'SW_HARDENING_NEEDED';
+    case qvlStatus.STATUS_TCB_CONFIGURATION_AND_SW_HARDENING_NEEDED:
+        return 'CONFIGURATION_AND_SW_HARDENING_NEEDED';
+    case qvlStatus.STATUS_TCB_TD_RELAUNCH_ADVISED:
+        return 'TD_RELAUNCH_ADVISED';
+    case qvlStatus.STATUS_TCB_TD_RELAUNCH_ADVISED_AND_CONFIGURATION_NEEDED:
+        return 'TD_RELAUNCH_ADVISED_AND_CONFIGURATION_NEEDED';
+    default:
+        return null;
     }
 }
 
@@ -397,14 +451,14 @@ function getErrorMessage(status, source) {
         qvlStatus.STATUS_SGX_ROOT_CA_INVALID_ISSUER,
     ], errorSource.VERIFY_PCK_CERTIFICATE) ||
         status === qvlStatus.STATUS_SGX_PCK_CERT_CHAIN_UNTRUSTED) {
-        return 'Issue with parsing root CA cert' + statusMessage;
+        return `Issue with parsing root CA cert: ${statusMessage}`;
     }
     if (isStatusOneOf([
         qvlStatus.STATUS_SGX_INTERMEDIATE_CA_MISSING,
         qvlStatus.STATUS_SGX_INTERMEDIATE_CA_INVALID_EXTENSIONS,
         qvlStatus.STATUS_SGX_INTERMEDIATE_CA_INVALID_ISSUER
     ])) {
-        return 'Issue with parsing intermediate CA cert' + statusMessage;
+        return `Issue with parsing intermediate CA cert: ${statusMessage}`;
     }
     if (isStatusOneOf([
         qvlStatus.STATUS_SGX_PCK_MISSING,
@@ -413,7 +467,7 @@ function getErrorMessage(status, source) {
         qvlStatus.STATUS_UNSUPPORTED_PCK_CERT_FORMAT,
         qvlStatus.STATUS_INVALID_PCK_CERT
     ])) {
-        return 'Issue with parsing PCK cert' + statusMessage;
+        return `Issue with parsing PCK cert: ${statusMessage}`;
     }
     if (isStatusOneOf([
         qvlStatus.STATUS_UNSUPPORTED_QUOTE_FORMAT,
@@ -422,15 +476,15 @@ function getErrorMessage(status, source) {
         qvlStatus.STATUS_QE_IDENTITY_MISMATCH,
         qvlStatus.STATUS_TDX_MODULE_MISMATCH,
     ])) {
-        return 'Issue with parsing quote' + statusMessage;
+        return `Issue with parsing quote: ${statusMessage}`;
     }
     switch (status) {
-        case qvlStatus.STATUS_TCB_NOT_SUPPORTED:
-            return 'No matching TCB Level found';
-        case qvlStatus.STATUS_SGX_PCK_CERT_CHAIN_EXPIRED:
-            return 'Either of certs in PCK cert chain has expired.';
-        default:
-            return null;
+    case qvlStatus.STATUS_TCB_NOT_SUPPORTED:
+        return 'No matching TCB Level found';
+    case qvlStatus.STATUS_SGX_PCK_CERT_CHAIN_EXPIRED:
+        return 'Either of certs in PCK cert chain has expired.';
+    default:
+        return null;
     }
 }
 
@@ -451,7 +505,7 @@ async function getType5CertificationDataFromQuote(reqId, quote) {
     }
 
     if (certificationData.type !== 5) {
-        throw new Error('Not supported certification data type: ' + certificationData.type);
+        throw new Error(`Not supported certification data type: ${certificationData.type}`);
     }
     return certificationData.data;
 }
@@ -466,7 +520,7 @@ async function getPckCertificateData(reqId, pckCertPem) {
     try {
         return await qvl.getPckCertificateData(reqId, pckCertPem);
     }
-    catch (error)  {
+    catch (error) {
         throw new Error('PCK Cert does not contain required extensions', error);
     }
 }
@@ -480,16 +534,16 @@ async function getPckCertificateData(reqId, pckCertPem) {
 async function readTcbInfoAndIssuerChainFromResponse(response) {
     let err;
     switch (response.status) {
-        case STATUSES.STATUS_OK.httpCode:
-            break;
-        case STATUSES.STATUS_TCB_NOT_FOUND.httpCode:
-            err = new Error('Failed to retrieve required TcbInfo. PCS returned status: ' + response.status);
-            err.status = 400;
-            throw err;
-        default:
-            err = new Error('Failed to retrieve required TcbInfo. PCS returned status: ' + response.status);
-            err.status = 500;
-            throw err;
+    case STATUSES.STATUS_OK.httpCode:
+        break;
+    case STATUSES.STATUS_TCB_NOT_FOUND.httpCode:
+        err = new Error(`Failed to retrieve required TcbInfo. PCS returned status: ${response.status}`);
+        err.status = 400;
+        throw err;
+    default:
+        err = new Error(`Failed to retrieve required TcbInfo. PCS returned status: ${response.status}`);
+        err.status = 500;
+        throw err;
     }
     const tcbInfo = response.body;
     const tcbInfoIssuerChain = decodeURIComponent(response.headers['tcb-info-issuer-chain']);
@@ -510,7 +564,7 @@ async function readTcbInfoAndIssuerChainFromResponse(response) {
  */
 function readQeIdentityFromResponse(response) {
     if (response.status !== STATUSES.STATUS_OK.httpCode) {
-        throw new Error('Failed to retrieve required QeIdentity. PCS returned status: ' + response.status);
+        throw new Error(`Failed to retrieve required QeIdentity. PCS returned status: ${response.status}`);
     }
     return response.body;
 }
@@ -543,7 +597,7 @@ async function signReport(report, ctx) {
     ctx.set('X-IASReport-Signing-Certificate', attestationReportSigningChain);
     const signResponse = await vcs.signVerificationReport(report, ctx.reqId, ctx.log);
     if (signResponse.status !== STATUSES.STATUS_OK.httpCode) {
-        throw new Error('Failed to sign the report. VCS returned status: ' + signResponse.status);
+        throw new Error(`Failed to sign the report. VCS returned status: ${signResponse.status}`);
     }
     const signature = signResponse.body.signature;
     ctx.set('X-IASReport-Signature', signature);
@@ -604,7 +658,7 @@ function readIsvsvn(quote) {
         isvsvnOffset = V3_ISVSVN_QUOTE_OFFSET;
     }
     else if (quoteVersion === 4) {
-        isvsvnOffset = (quoteType === 'TDX') ? V4_TDX10_ISVSVN_QUOTE_OFFSET : V4_SGX_ISVSVN_QUOTE_OFFSET;
+        isvsvnOffset = quoteType === 'TDX' ? V4_TDX10_ISVSVN_QUOTE_OFFSET : V4_SGX_ISVSVN_QUOTE_OFFSET;
     }
     else if (quoteVersion === 5) {
         if (quoteType === 'SGX') {
@@ -617,11 +671,11 @@ function readIsvsvn(quote) {
             isvsvnOffset = V5_TDX15_ISVSVN_QUOTE_OFFSET;
         }
         else {
-            throw new Error('Unsupported quote body version: ' + quoteBodyVersion);
+            throw new Error(`Unsupported quote body version: ${quoteBodyVersion}`);
         }
     }
     else {
-        throw new Error('Unsupported quote version: ' + quoteType);
+        throw new Error(`Unsupported quote version: ${quoteType}`);
     }
     if (isvsvnOffset > quote.length - 2) {
         throw new Error('Version detection issue. Quote is too short to read ISVSVN.');
@@ -643,7 +697,7 @@ function readTdxsvn(quote) {
         return undefined;
     }
 
-    const tdxsvnOffset = (quoteVersion === 4) ? tdxsvnOffsetInQuoteV4 : tdxsvnOffsetInQuoteV5;
+    const tdxsvnOffset = quoteVersion === 4 ? tdxsvnOffsetInQuoteV4 : tdxsvnOffsetInQuoteV5;
     return quote.slice(tdxsvnOffset, tdxsvnOffset + tdxsvnSize);
 }
 
@@ -654,7 +708,7 @@ function readTdxsvn(quote) {
  */
 function parseCrlFromDistributionPoint(crl) {
     if (crl.status !== STATUSES.STATUS_OK.httpCode) {
-        throw new Error('Failed to retrieve one of CRLs. Distribution Point returned status: ' + (crl.status || crl));
+        throw new Error(`Failed to retrieve one of CRLs. Distribution Point returned status: ${crl.status || crl}`);
     }
     // PEM format - QVL requires utf8 string
     if (crl.body.toString().startsWith('-----BEGIN')) {
@@ -671,7 +725,7 @@ function parseCrlFromDistributionPoint(crl) {
  * @returns {string}
  */
 function generateReportId() {
-    return String(BigInt('0x' + random.uuid()));
+    return String(BigInt(`0x${random.uuid()}`));
 }
 
 /**
@@ -681,7 +735,7 @@ function generateReportId() {
 function prepareTimestampForReport() {
     const format = 'YYYY-MM-DDTHH:mm:ss';
     const utcTimestamp = moment.utc(new Date()).format(format);
-    return utcTimestamp + 'Z';
+    return `${utcTimestamp}Z`;
 }
 
 /**
@@ -752,17 +806,17 @@ async function getCrlUrl(reqId, certificate) {
     const crlDistributionPoint = await qvl.getCrlDistributionPoint(reqId, certificate);
     const idx = crlDistributionPoint.indexOf(uriString);
     if (idx === -1) {
-        throw Error('CRL Distribution point is in wrong format ' + crlDistributionPoint);
+        throw Error(`CRL Distribution point is in wrong format ${crlDistributionPoint}`);
     }
     return crlDistributionPoint.substring(idx + uriString.length, crlDistributionPoint.length);
 }
 
 /**
  * Finds TcbLevel with provided cpusvn, pcesvn and optional tdxsvn in tcbInfo
- * @param {TcbInfo} tcbInfo 
- * @param {string} cpusvn 
- * @param {string} pcesvn 
- * @param {string} [tdxsvn] 
+ * @param {TcbInfo} tcbInfo
+ * @param {string} cpusvn
+ * @param {string} pcesvn
+ * @param {buffer} [tdxsvn]
  * @returns {TcbLevel}
  */
 function matchTcbInfoTcbLevel(tcbInfo, cpusvn, pcesvn, tdxsvn) {
@@ -770,8 +824,8 @@ function matchTcbInfoTcbLevel(tcbInfo, cpusvn, pcesvn, tdxsvn) {
         const cpuSvnEqualOrGreater = cpusvn.every((svn, i) => svn >= level.tcb.sgxtcbcomponents[i].svn); // Readability trade off for performance. Invert condition and use 'some' instead of 'every' to gain some performance
         if (cpuSvnEqualOrGreater && pcesvn >= level.tcb.pcesvn) {
             if (tdxsvn) {
-                const teeSvnEqualOrGreater = tdxsvn.every((svn, i) => svn >= level.tcb.tdxtcbcomponents[i].svn); // Readability trade off for performance. Invert condition and use 'some' instead of 'every' to gain some performance
-                return (teeSvnEqualOrGreater && tdxsvn[1] === level.tcb.tdxtcbcomponents[1].svn);
+                const startIndex = tdxsvn[1] === 0 ? 0 : 2;
+                return tdxsvn.slice(startIndex).every((svn, i) => svn >= level.tcb.tdxtcbcomponents[i + startIndex].svn); // Readability trade off for performance. Invert condition and use 'some' instead of 'every' to gain some performance
             }
             else {
                 return true;
@@ -783,39 +837,62 @@ function matchTcbInfoTcbLevel(tcbInfo, cpusvn, pcesvn, tdxsvn) {
 }
 
 /**
- * 
- * @param {EnclaveIdentity} qeIdentity 
- * @param {string} isvsvn 
+ *
+ * @param {EnclaveIdentity} qeIdentity
+ * @param {string} isvsvn
  * @returns {EnclaveTcbLevel}
  */
 function matchEnclaveTcbTcbLevel(qeIdentity, isvsvn) {
-    const matchedTcbLevel = qeIdentity.enclaveIdentity.tcbLevels.find(level => level.tcb.isvsvn <= isvsvn);
+    const matchedTcbLevel = qeIdentity.enclaveIdentity.tcbLevels.find(level => level.tcb && level.tcb.isvsvn <= isvsvn);
     return matchedTcbLevel;
 }
 
 /**
- * 
- * @param {TcbInfo} tcbInfo 
- * @returns 
+ *
+ * @param {TcbInfo} tcbInfo
+ * @param {number} tdxModuleMajorVersion
+ * @returns {TdxModuleIdentity}
+ */
+function matchTdxModuleIdentity(tcbInfo, tdxModuleMajorVersion) {
+    const tdxModuleIdentityId = `TDX_${tdxModuleMajorVersion.toString(16).padStart(2, '0').toUpperCase()}`;
+    const matchedTdxModuleIdentity = tcbInfo.tcbInfo.tdxModuleIdentities.find(identity => identity.id === tdxModuleIdentityId);
+    return matchedTdxModuleIdentity;
+}
+
+/**
+ *
+ * @param {TdxModuleIdentity} tdxModuleIdentity
+ * @param {number} tdxModuleSvn
+ * @returns {TdxModuleTcbLevel}
+ */
+function matchTdxModuleTcbLevel(tdxModuleIdentity, tdxModuleSvn) {
+    const matchedTdxModuleTcbLevel = tdxModuleIdentity.tcbLevels.find(level => level.tcb && level.tcb.isvsvn <= tdxModuleSvn);
+    return matchedTdxModuleTcbLevel;
+}
+
+/**
+ *
+ * @param {TcbInfo} tcbInfo
+ * @returns
  */
 function getHighestCpuSvn(tcbInfo) {
     return getHighestSvn(tcbInfo, x => x.sgxtcbcomponents);
 }
 
 /**
- * 
- * @param {TcbInfo} tcbInfo 
- * @returns 
+ *
+ * @param {TcbInfo} tcbInfo
+ * @returns
  */
 function getHighestTdxSvn(tcbInfo) {
     return getHighestSvn(tcbInfo, x => x.tdxtcbcomponents);
 }
 
 /**
- * 
- * @param {TcbInfo} tcbInfo 
- * @param {function} svnSelector 
- * @returns 
+ *
+ * @param {TcbInfo} tcbInfo
+ * @param {function} svnSelector
+ * @returns
  */
 function getHighestSvn(tcbInfo, svnSelector) {
     return tcbInfo.tcbInfo.tcbLevels
