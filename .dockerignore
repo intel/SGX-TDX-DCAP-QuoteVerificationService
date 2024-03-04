@@ -7,6 +7,9 @@
 !test
 !build/qvls
 !Dockerfile
+!nyc.config.js
+!.eslintrc
+!reporter_config.json
 
 # 3. Ignore unnecessary files inside allowed directories
 src/node_modules

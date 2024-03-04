@@ -37,12 +37,27 @@ function fail {
 # Get absolute path to the script itself
 SCRIPT_DIR="$(cd "$(dirname "$0")" || exit 1; pwd)"
 
+DEBUG=false
+OPTS=$(getopt -o "d" -l "debug" -n "$0" -- "$@")
+if [ $? != 0 ] ; then
+  fail "Failed parsing args usage: build.sh [-d|--debug] [qvlPath]"
+fi
+eval set -- ${OPTS}
+while :
+do
+  case $1 in
+    -d | --debug) DEBUG=true; shift ;;
+    --) shift; break ;;
+  esac
+done
+
 # Check if QVL path has been provided
-if [ -z "$1" ]
+QVL_PATH_ARG=$1
+if [ -z "$QVL_PATH_ARG" ]
   then
     QVL_PATH="$(cd "$(dirname "$SCRIPT_DIR"/../QVL/Src)" || exit 2; pwd)/Src"
 else
-  QVL_PATH="$(cd "$(dirname "$1")" || exit 2; pwd)/$(basename "$1")"
+  QVL_PATH="$(cd "$(dirname "$QVL_PATH_ARG")" || exit 2; pwd)/$(basename "$QVL_PATH_ARG")"
 fi
 
 echo "QVL_PATH=$QVL_PATH"
@@ -67,7 +82,11 @@ fi
 
 # Build Docker Image
 function buildDocker() {
-  docker build "$SCRIPT_DIR" -t qvs
+  docker build --target artifacts --output="$SCRIPT_DIR" "$SCRIPT_DIR"
+  if [ "$DEBUG" = true ]; then
+    docker build --target debug-artifacts --output="$SCRIPT_DIR" "$SCRIPT_DIR"
+  fi
+  docker build --target app "$SCRIPT_DIR" -t qvs
 }
 
 if ! buildDocker; then

@@ -76,13 +76,43 @@ RUN mkdir -p /qvs/native/lib/ \
  && cp /qvl/Build/Release/dist/lib/*.so /qvs/native/lib/ \
  && cp /qvs/src/qvl/cmake-build-release/Release/*.node /qvs/native/ \
  && rm -rf /qvs/src/qvl/cmake-build-release
+# audit
+RUN mkdir ../build && npm audit --omit=dev --json > ../build/NpmAuditReport.json || echo "Npm audit failed!"
+
 # copy QVS test files
 COPY test /qvs/test
+COPY nyc.config.js .eslintrc reporter_config.json /qvs/
 # test QVS
 WORKDIR /qvs/test
 RUN npm install && NODE_ENV=production npm test
+# lint test
+RUN NODE_ENV=production npm run lint-report
 
-FROM node:lts-slim
+FROM qvl-builder as qvl-builder-debug
+WORKDIR /qvl
+RUN ./runUT debug -DBUILD_LOGS=ON
+
+FROM qvs-builder as qvs-builder-debug
+
+COPY --from=qvl-builder-debug --chown=node:node /qvl/Build/Debug /qvl/Build/Debug
+RUN echo 'cmake_QVL_PATH=/qvl/Build/Debug/dist' >> /qvs/src/.npmrc # workaround for npm 9+ https://github.com/npm/cli/issues/5852
+WORKDIR /qvs/src
+RUN npm run install-debug
+RUN mkdir -p /qvs/native/lib/ \
+ && cp /qvl/Build/Debug/dist/lib/*.so /qvs/native/lib/ \
+ && cp /qvs/src/qvl/cmake-build-release/Debug/*.node /qvs/native/
+
+FROM scratch as artifacts
+COPY --from=qvs-builder /qvs/build /build
+COPY --from=qvs-builder /qvs/native /native
+
+FROM scratch as debug-artifacts
+COPY --from=qvs-builder-debug /qvs/build /build
+COPY --from=qvs-builder-debug /qvs/native /native
+COPY --from=qvs-builder /qvs/src/node_modules /src/node_modules
+COPY --from=qvs-builder /qvs/test/node_modules /test/node_modules
+
+FROM node:lts-slim as app
 
 LABEL description="Quote Verification Service"
 

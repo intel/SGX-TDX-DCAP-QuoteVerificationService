@@ -2,6 +2,7 @@
     "name": "quoteverificationservice",
     "scripts": {
         "install": "cmake-js build -d qvl/ -O qvl/cmake-build-release",
+        "install-debug": "cmake-js build -d qvl/ -O qvl/cmake-build-release --debug",
         "swagger": "node swagger.js"
     },
     "version": "1.0.0",

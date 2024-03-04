@@ -288,6 +288,32 @@ IQCUt8SGvxKmjpcM/z0WP9Dvo8h2k5du1iWDdBkAn+0iiA==
                             tcbStatus:   'ConfigurationNeeded',
                             advisoryIDs: ['INTEL-SA-38861', 'INTEL-SA-68515']
                         }
+                    ],
+                    tdxModule: {
+                        mrsigner:       '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+                        attributes:     '0000000000000000',
+                        attributesMask: 'FFFFFFFFFFFFFFFF'
+                    },
+                    tdxModuleIdentities: [
+                        {
+                            id:             'TDX_C1', //193
+                            mrsigner:       '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+                            attributes:     '0000000000000000',
+                            attributesMask: 'FFFFFFFFFFFFFFFF',
+                            tcbLevels:      [
+                                {
+                                    tcb:       { isvsvn: 83 },
+                                    tcbDate:   '019-09-01T00:00:00Z',
+                                    tcbStatus: 'UpToDate'
+                                },
+                                {
+                                    tcb:         { isvsvn: 2 },
+                                    tcbDate:     '019-09-01T00:00:00Z',
+                                    tcbStatus:   'OutOfDate',
+                                    advisoryIDs: ['INTEL-SA-32143', 'INTEL-SA-14332']
+                                }
+                            ]
+                        }
                     ]
                 }
             };
@@ -475,7 +501,7 @@ describe('verify attestation evidence handler tests', () => {
         await target.verifyAttestationEvidence(ctx);
         // THEN
         c.assertPositiveTdx(ctx);
-        assert.equal(Object.keys(ctx.body).length, 9, 'Unexpected number of fields in response');
+        assert.equal(Object.keys(ctx.body).length, 11, 'Unexpected number of fields in response');
         assert.equal(ctx.body.isvQuoteStatus, 'OK');
         assert.equal(ctx.body.tcbEvaluationDataNumber, 0);
     });
@@ -508,7 +534,7 @@ describe('verify attestation evidence handler tests', () => {
         assert.equal(ctx.body.isvQuoteBody, c.tdxQuoteBody);
         assert.equal(ctx.body.tcbEvaluationDataNumber, 0);
         assert.equal(ctx.body.advisoryURL, 'https://security-center.intel.com');
-        assert.equal(JSON.stringify(ctx.body.advisoryIDs), JSON.stringify(['INTEL-SA-38861', 'INTEL-SA-68515']));
+        assert.equal(JSON.stringify(ctx.body.advisoryIDs), JSON.stringify(['INTEL-SA-14332', 'INTEL-SA-32143', 'INTEL-SA-38861', 'INTEL-SA-68515']));
     });
 
     it('execute - TDX - ConfigurationNeeded/TCB_OUT_OF_DATE', async() => {
@@ -543,8 +569,8 @@ describe('verify attestation evidence handler tests', () => {
         assert.equal(ctx.body.isvQuoteBody, c.tdxQuoteBody);
         assert.equal(ctx.body.tcbEvaluationDataNumber, 0);
         assert.equal(ctx.body.advisoryURL, 'https://security-center.intel.com');
-        assert.equal(JSON.stringify(ctx.body.advisoryIDs), JSON.stringify(['INTEL-SA-38861', 'INTEL-SA-68515']));
-        assert.equal(JSON.stringify(ctx.body.tcbComponentsOutOfDate), JSON.stringify([{ category: 'cat1', type: 'type1' }, { category: 'KRYYIXKC8U', type: '@TU9B14XQO' }]));
+        assert.equal(JSON.stringify(ctx.body.advisoryIDs), JSON.stringify(['INTEL-SA-14332', 'INTEL-SA-32143', 'INTEL-SA-38861', 'INTEL-SA-68515']));
+        assert.equal(JSON.stringify(ctx.body.tcbComponentsOutOfDate), JSON.stringify([{ category: 'cat1', type: 'type1' }, { category: 'KRYYIXKC8U', type: '@TU9B14XQO' }, { category: 'OS/VMM', type: 'TDX Module' }]));
         assert.equal(JSON.stringify(ctx.body.configuration), JSON.stringify(['DYNAMIC_PLATFORM', 'CACHED_KEYS', 'SMT_ENABLED']));
         assert.equal(ctx.body.nonce, nonce);
         assert.equal(Object.keys(ctx.body).length, 14, 'Unexpected number of fields in response');
@@ -616,7 +642,8 @@ describe('verify attestation evidence handler tests', () => {
     });
 
     it('execute - TDX - Enclave TCB level match between levels', async() => {
-        const expectedAdvisoryIds = ['INTEL-SA-54321'];
+        const expectedTdxModuleIdentityAdvisoryIds = ['INTEL-SA-14332', 'INTEL-SA-32143'];
+        const expectedEnclaveIdentityAdvisoryIds = ['INTEL-SA-54321'];
         const c = new TestContext();
         const target = await c.getTarget();
         const ctx = await c.getCtx();
@@ -630,7 +657,7 @@ describe('verify attestation evidence handler tests', () => {
                 tcbLevels:               [
                     {
                         tcb:         { isvsvn: 555 },
-                        advisoryIDs: expectedAdvisoryIds
+                        advisoryIDs: expectedEnclaveIdentityAdvisoryIds
                     }
                 ]
             }
@@ -641,7 +668,7 @@ describe('verify attestation evidence handler tests', () => {
         await target.verifyAttestationEvidence(ctx);
         // THEN
         c.assertPositiveTdx(ctx);
-        assert.deepEqual(ctx.body.advisoryIDs, expectedAdvisoryIds);
+        assert.deepEqual(ctx.body.advisoryIDs, expectedTdxModuleIdentityAdvisoryIds.concat(expectedEnclaveIdentityAdvisoryIds));
     });
 
     it('execute - TDX - TCB level mismatch', async() => {
@@ -680,12 +707,12 @@ describe('verify attestation evidence handler tests', () => {
                                     { svn: 0 }
                                 ],
                                 tdxtcbcomponents: [
-                                    { svn: 83, category: 'KRYYIXKC8U', type: '@TU9B14XQO' },
+                                    { svn: 82, category: 'KRYYIXKC8U', type: '@TU9B14XQO' },
                                     { svn: 193, category: '504X036OI0', type: 'EQJ363GEJV' },
                                     { svn: 163, category: 'JZT5BUBBET', type: '@6ZH630STD' },
                                     { svn: 140, category: 'XMJJ814468', type: '1G0N1J G9D' },
                                     { svn: 247, category: 'HGVSWL@TCR', type: '9WZUC8QV@G' },
-                                    { svn: 237 },
+                                    { svn: 238 },
                                     { svn: 243 },
                                     { svn: 10 },
                                     { svn: 82 },
@@ -824,7 +851,27 @@ describe('verify attestation evidence handler tests', () => {
                                 tcbStatus:   'ConfigurationNeeded',
                                 advisoryIDs: [] // should be filled in real scenario
                             }
-                        ]
+                        ],
+                    tdxModule: {
+                        mrsigner:       '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+                        attributes:     '0000000000000000',
+                        attributesMask: 'FFFFFFFFFFFFFFFF'
+                    },
+                    tdxModuleIdentities: [
+                        {
+                            id:             'TDX_C1',
+                            mrsigner:       '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+                            attributes:     '0000000000000000',
+                            attributesMask: 'FFFFFFFFFFFFFFFF',
+                            tcbLevels:      [
+                                {
+                                    tcb:       { isvsvn: 2 },
+                                    tcbDate:   '019-09-01T00:00:00Z',
+                                    tcbStatus: 'UpToDate'
+                                }
+                            ]
+                        }
+                    ]
                 }
             })
             .setupQeIdentity()
@@ -836,6 +883,418 @@ describe('verify attestation evidence handler tests', () => {
         // THEN
         c.assertPositiveTdx(ctx);
         assert.equal(ctx.body.advisoryIDs, undefined);
+    });
+
+    it('execute - TDX - TDX Module Identity mismatch', async() => {
+        //GIVEN
+        const c = new TestContext();
+        const target = await c.getTarget();
+        const ctx = await c.getCtx();
+        ctx.request.body = {
+            isvQuote: c.tdxQuote
+        };
+        c.setupCertificationData()
+            .setupPckCertificateData()
+            .setupCrlDistributionPoint()
+            .setupTcbInfo({
+                tcbInfo: {
+                    issueDate: '2021-08-06T13:55:15Z',
+                    tcbLevels: [
+                        {
+                            tcb: {
+                                sgxtcbcomponents: [
+                                    { svn: 3 },
+                                    { svn: 2 },
+                                    { svn: 1 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 }
+                                ],
+                                tdxtcbcomponents: [
+                                    { svn: 82, category: 'KRYYIXKC8U', type: '@TU9B14XQO' },
+                                    { svn: 193, category: '504X036OI0', type: 'EQJ363GEJV' },
+                                    { svn: 163, category: 'JZT5BUBBET', type: '@6ZH630STD' },
+                                    { svn: 140, category: 'XMJJ814468', type: '1G0N1J G9D' },
+                                    { svn: 247, category: 'HGVSWL@TCR', type: '9WZUC8QV@G' },
+                                    { svn: 237 },
+                                    { svn: 243 },
+                                    { svn: 10 },
+                                    { svn: 82 },
+                                    { svn: 75, category: 'GDXEGMOEMR', type: 'TC145 MZV0' },
+                                    { svn: 78, category: 'L9GDQAPJEN', type: 'I YVRGWSOR' },
+                                    { svn: 187, category: 'AW 0H0XEFY', type: 'PNGZ1XU075' },
+                                    { svn: 4 },
+                                    { svn: 159 },
+                                    { svn: 89, category: 'JLH22L7UTB', type: 'GX3A1IZC82' },
+                                    { svn: 199 },
+                                ],
+                                pcesvn: 3,
+                            },
+                            tcbDate:   '2019-09-01T00:00:00Z',
+                            tcbStatus: 'UpToDate'
+                        }
+                    ],
+                    tdxModule: {
+                        mrsigner:       '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+                        attributes:     '0000000000000000',
+                        attributesMask: 'FFFFFFFFFFFFFFFF'
+                    },
+                    tdxModuleIdentities: [
+                        {
+                            id:             'TDX_D2', // the matching TDX Module Major Version is 193 (C1)
+                            mrsigner:       '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+                            attributes:     '0000000000000000',
+                            attributesMask: 'FFFFFFFFFFFFFFFF',
+                            tcbLevels:      [
+                                {
+                                    tcb:         { isvsvn: 2 },
+                                    tcbDate:     '019-09-01T00:00:00Z',
+                                    tcbStatus:   'UpToDate',
+                                    advisoryIDs: ['INTEL-SA-32143', 'INTEL-SA-14332']
+                                }
+                            ]
+                        }
+                    ]
+                }
+            })
+            .setupQeIdentity()
+            .setupVerifyQuote()
+            .setupCertificateChain()
+            .setupSignature();
+        //WHEN
+        await target.verifyAttestationEvidence(ctx);
+        //THEN
+        assert.equal(ctx.status, 400);
+        assert.equal(c.qvl.getCertificationData.callCount, 1);
+        assert.equal(c.qvl.getPckCertificateData.callCount, 1);
+        assert.equal(c.qvl.getCrlDistributionPoint.callCount, 2);
+        assert.equal(ctx.body, undefined, 'Unexpected body response');
+    });
+
+    it('execute - TDX - TDX Module TCB level mismatch', async() => {
+        //GIVEN
+        const c = new TestContext();
+        const target = await c.getTarget();
+        const ctx = await c.getCtx();
+        ctx.request.body = {
+            isvQuote: c.tdxQuote
+        };
+        c.setupCertificationData()
+            .setupPckCertificateData()
+            .setupCrlDistributionPoint()
+            .setupTcbInfo({
+                tcbInfo: {
+                    issueDate: '2021-08-06T13:55:15Z',
+                    tcbLevels: [
+                        {
+                            tcb: {
+                                sgxtcbcomponents: [
+                                    { svn: 3 },
+                                    { svn: 2 },
+                                    { svn: 1 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 }
+                                ],
+                                tdxtcbcomponents: [
+                                    { svn: 82, category: 'KRYYIXKC8U', type: '@TU9B14XQO' },
+                                    { svn: 193, category: '504X036OI0', type: 'EQJ363GEJV' },
+                                    { svn: 163, category: 'JZT5BUBBET', type: '@6ZH630STD' },
+                                    { svn: 140, category: 'XMJJ814468', type: '1G0N1J G9D' },
+                                    { svn: 247, category: 'HGVSWL@TCR', type: '9WZUC8QV@G' },
+                                    { svn: 237 },
+                                    { svn: 243 },
+                                    { svn: 10 },
+                                    { svn: 82 },
+                                    { svn: 75, category: 'GDXEGMOEMR', type: 'TC145 MZV0' },
+                                    { svn: 78, category: 'L9GDQAPJEN', type: 'I YVRGWSOR' },
+                                    { svn: 187, category: 'AW 0H0XEFY', type: 'PNGZ1XU075' },
+                                    { svn: 4 },
+                                    { svn: 159 },
+                                    { svn: 89, category: 'JLH22L7UTB', type: 'GX3A1IZC82' },
+                                    { svn: 199 },
+                                ],
+                                pcesvn: 3,
+                            },
+                            tcbDate:   '2019-09-01T00:00:00Z',
+                            tcbStatus: 'UpToDate'
+                        }
+                    ],
+                    tdxModule: {
+                        mrsigner:       '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+                        attributes:     '0000000000000000',
+                        attributesMask: 'FFFFFFFFFFFFFFFF'
+                    },
+                    tdxModuleIdentities: [
+                        {
+                            id:             'TDX_C1',
+                            mrsigner:       '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+                            attributes:     '0000000000000000',
+                            attributesMask: 'FFFFFFFFFFFFFFFF',
+                            tcbLevels:      [
+                                {
+                                    tcb:         { isvsvn: 99999 }, // level needs to have isvsvn <= 12677 to match
+                                    tcbDate:     '019-09-01T00:00:00Z',
+                                    tcbStatus:   'UpToDate',
+                                    advisoryIDs: ['INTEL-SA-32143', 'INTEL-SA-14332']
+                                }
+                            ]
+                        }
+                    ]
+                }
+            })
+            .setupQeIdentity()
+            .setupVerifyQuote()
+            .setupCertificateChain()
+            .setupSignature();
+        //WHEN
+        await target.verifyAttestationEvidence(ctx);
+        //THEN
+        assert.equal(ctx.status, 400);
+        assert.equal(c.qvl.getCertificationData.callCount, 1);
+        assert.equal(c.qvl.getPckCertificateData.callCount, 1);
+        assert.equal(c.qvl.getCrlDistributionPoint.callCount, 2);
+        assert.equal(ctx.body, undefined, 'Unexpected body response');
+    });
+
+    it('execute - TDX - TDX Module Major Version equals 0 - UpToDate', async() => {
+        //GIVEN
+        //quote with TDX Module Major Version equal to 0
+        const tdxQuote = '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';
+        const tdxQuoteBody = 'BAACAIEAAAAAAAAAk5pyM/ecTKmUCg2zlX8GB0PP8xCV14+q/cEZXptW+nYebWwaUgCjjPft8wpSS067BJ9ZxwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
+        const c = new TestContext();
+        const target = await c.getTarget();
+        const ctx = await c.getCtx();
+        ctx.request.body = {
+            isvQuote: tdxQuote
+        };
+        c.setupCertificationData()
+            .setupPckCertificateData()
+            .setupCrlDistributionPoint()
+            .setupTcbInfo({
+                tcbInfo: {
+                    issueDate: '2021-08-06T13:55:15Z',
+                    tcbLevels: [
+                        {
+                            tcb: {
+                                sgxtcbcomponents: [
+                                    { svn: 3 },
+                                    { svn: 2 },
+                                    { svn: 1 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 }
+                                ],
+                                tdxtcbcomponents: [
+                                    { svn: 82, category: 'KRYYIXKC8U', type: '@TU9B14XQO' },
+                                    { svn: 0, category: '504X036OI0', type: 'EQJ363GEJV' },
+                                    { svn: 163, category: 'JZT5BUBBET', type: '@6ZH630STD' },
+                                    { svn: 140, category: 'XMJJ814468', type: '1G0N1J G9D' },
+                                    { svn: 247, category: 'HGVSWL@TCR', type: '9WZUC8QV@G' },
+                                    { svn: 237 },
+                                    { svn: 243 },
+                                    { svn: 10 },
+                                    { svn: 82 },
+                                    { svn: 75, category: 'GDXEGMOEMR', type: 'TC145 MZV0' },
+                                    { svn: 78, category: 'L9GDQAPJEN', type: 'I YVRGWSOR' },
+                                    { svn: 187, category: 'AW 0H0XEFY', type: 'PNGZ1XU075' },
+                                    { svn: 4 },
+                                    { svn: 159 },
+                                    { svn: 89, category: 'JLH22L7UTB', type: 'GX3A1IZC82' },
+                                    { svn: 199 },
+                                ],
+                                pcesvn: 3,
+                            },
+                            tcbDate:   '2019-09-01T00:00:00Z',
+                            tcbStatus: 'UpToDate'
+                        },
+                        {
+                            tcb: {
+                                sgxtcbcomponents: [
+                                    { svn: 3 },
+                                    { svn: 2 },
+                                    { svn: 0, category: 'cat1', type: 'type1' }, // this value is intentionally OutOfDate with the same category and type as TDX value to test value deduplication
+                                    { svn: 0, category: 'cat1' },
+                                    { svn: 0, type: 'type1' },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 }
+                                ],
+                                tdxtcbcomponents: [
+                                    { svn: 81, category: 'KRYYIXKC8U', type: '@TU9B14XQO' },
+                                    { svn: 193, category: '504X036OI0', type: 'EQJ363GEJV' },
+                                    { svn: 163, type: '@6ZH630STD' },
+                                    { svn: 140, category: 'XMJJ814468' },
+                                    { svn: 247, category: 'HGVSWL@TCR', type: '9WZUC8QV@G' },
+                                    { svn: 237 },
+                                    { svn: 243 },
+                                    { svn: 9, category: 'cat1', type: 'type1' }, // this value is intentionally OutOfDate with the same category and type as SGX value to test value deduplication
+                                    { svn: 82 },
+                                    { svn: 75, category: 'GDXEGMOEMR', type: 'TC145 MZV0' },
+                                    { svn: 78, category: 'L9GDQAPJEN', type: 'I YVRGWSOR' },
+                                    { svn: 187, category: 'AW 0H0XEFY', type: 'PNGZ1XU075' },
+                                    { svn: 4 },
+                                    { svn: 159 },
+                                    { svn: 89, category: 'JLH22L7UTB', type: 'GX3A1IZC82' },
+                                    { svn: 199 },
+                                ],
+                                pcesvn: 3,
+                            },
+                            tcbDate:     '2019-09-01T00:00:00Z',
+                            tcbStatus:   'ConfigurationNeeded',
+                            advisoryIDs: ['INTEL-SA-38861', 'INTEL-SA-68515']
+                        }
+                    ],
+                    tdxModule: {
+                        mrsigner:       '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+                        attributes:     '0000000000000000',
+                        attributesMask: 'FFFFFFFFFFFFFFFF'
+                    },
+                    tdxModuleIdentities: [
+                        {
+                            id:             'TDX_C1', //193
+                            mrsigner:       '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+                            attributes:     '0000000000000000',
+                            attributesMask: 'FFFFFFFFFFFFFFFF',
+                            tcbLevels:      [
+                                {
+                                    tcb:         { isvsvn: 2 },
+                                    tcbDate:     '019-09-01T00:00:00Z',
+                                    tcbStatus:   'UpToDate',
+                                    advisoryIDs: ['INTEL-SA-32143', 'INTEL-SA-14332']
+                                }
+                            ]
+                        }
+                    ]
+                }
+            })
+            .setupQeIdentity()
+            .setupVerifyQuote()
+            .setupCertificateChain()
+            .setupSignature();
+        // WHEN
+        await target.verifyAttestationEvidence(ctx);
+        // THEN
+        assert.equal(ctx.body.teeType, 'TDX');
+        assert.equal(ctx.body.isvQuoteBody, tdxQuoteBody);
+        assert.equal(Object.keys(ctx.body).length, 9, 'Unexpected number of fields in response'); // no advisoryIds from TDX Module Identity
+        assert.equal(ctx.body.isvQuoteStatus, 'OK');
+        assert.equal(ctx.body.tcbEvaluationDataNumber, 0);
+    });
+
+    it('execute - TDX - TDX Module Major Version equals 0 - Tcb level mismatch on 1st byte', async() => {
+        //GIVEN
+        //quote with TDX Module Major Version equal to 0
+        const tdxQuote = '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';
+        const c = new TestContext();
+        const target = await c.getTarget();
+        const ctx = await c.getCtx();
+        ctx.request.body = {
+            isvQuote: tdxQuote
+        };
+        c.setupCertificationData()
+            .setupPckCertificateData()
+            .setupCrlDistributionPoint()
+            .setupTcbInfo({
+                tcbInfo: {
+                    issueDate: '2021-08-06T13:55:15Z',
+                    tcbLevels: [
+                        {
+                            tcb: {
+                                sgxtcbcomponents: [
+                                    { svn: 3 },
+                                    { svn: 2 },
+                                    { svn: 1 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 },
+                                    { svn: 0 }
+                                ],
+                                tdxtcbcomponents: [
+                                    { svn: 83, category: 'KRYYIXKC8U', type: '@TU9B14XQO' },
+                                    { svn: 0, category: '504X036OI0', type: 'EQJ363GEJV' },
+                                    { svn: 163, category: 'JZT5BUBBET', type: '@6ZH630STD' },
+                                    { svn: 140, category: 'XMJJ814468', type: '1G0N1J G9D' },
+                                    { svn: 247, category: 'HGVSWL@TCR', type: '9WZUC8QV@G' },
+                                    { svn: 237 },
+                                    { svn: 243 },
+                                    { svn: 10 },
+                                    { svn: 82 },
+                                    { svn: 75, category: 'GDXEGMOEMR', type: 'TC145 MZV0' },
+                                    { svn: 78, category: 'L9GDQAPJEN', type: 'I YVRGWSOR' },
+                                    { svn: 187, category: 'AW 0H0XEFY', type: 'PNGZ1XU075' },
+                                    { svn: 4 },
+                                    { svn: 159 },
+                                    { svn: 89, category: 'JLH22L7UTB', type: 'GX3A1IZC82' },
+                                    { svn: 199 },
+                                ],
+                                pcesvn: 3,
+                            },
+                            tcbDate:   '2019-09-01T00:00:00Z',
+                            tcbStatus: 'UpToDate'
+                        }
+                    ]
+                }
+            })
+            .setupQeIdentity()
+            .setupVerifyQuote()
+            .setupCertificateChain()
+            .setupSignature();
+        // WHEN
+        await target.verifyAttestationEvidence(ctx);
+        // THEN
+        assert.equal(ctx.status, 400);
+        assert.equal(c.qvl.getCertificationData.callCount, 1);
+        assert.equal(c.qvl.getPckCertificateData.callCount, 1);
+        assert.equal(c.qvl.getCrlDistributionPoint.callCount, 2);
+        assert.equal(ctx.body, undefined, 'Unexpected body response');
     });
 
     it('execute - quote parsing failure', async() => {
@@ -878,7 +1337,9 @@ describe('verify attestation evidence handler tests', () => {
         { qvlStatus: qvlStatus.STATUS_TCB_CONFIGURATION_NEEDED, isvQuoteStatus: 'CONFIGURATION_NEEDED' },
         { qvlStatus: qvlStatus.STATUS_TCB_OUT_OF_DATE_CONFIGURATION_NEEDED, isvQuoteStatus: 'TCB_OUT_OF_DATE_AND_CONFIGURATION_NEEDED' },
         { qvlStatus: qvlStatus.STATUS_TCB_SW_HARDENING_NEEDED, isvQuoteStatus: 'SW_HARDENING_NEEDED' },
-        { qvlStatus: qvlStatus.STATUS_TCB_CONFIGURATION_AND_SW_HARDENING_NEEDED, isvQuoteStatus: 'CONFIGURATION_AND_SW_HARDENING_NEEDED' }
+        { qvlStatus: qvlStatus.STATUS_TCB_CONFIGURATION_AND_SW_HARDENING_NEEDED, isvQuoteStatus: 'CONFIGURATION_AND_SW_HARDENING_NEEDED' },
+        { qvlStatus: qvlStatus.STATUS_TCB_TD_RELAUNCH_ADVISED, isvQuoteStatus: 'TD_RELAUNCH_ADVISED' },
+        { qvlStatus: qvlStatus.STATUS_TCB_TD_RELAUNCH_ADVISED_AND_CONFIGURATION_NEEDED, isvQuoteStatus: 'TD_RELAUNCH_ADVISED_AND_CONFIGURATION_NEEDED' }
     ];
     const qvlExpectedNegativeStatuses = [
         { qvlStatus: qvlStatus.STATUS_UNSUPPORTED_CERT_FORMAT, errorSource: errorSource.VERIFY_PCK_CERTIFICATE },

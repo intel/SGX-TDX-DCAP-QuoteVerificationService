@@ -71,6 +71,31 @@
  */
 
 /**
+ * @typedef {Object} TdxModuleTcbLevel
+ * @property {number} tcb.isvsvn - TDX Module’s ISV SVN.
+ * @property {Date} tcbDate - Representation of date and time when the TCB level was certified not to be vulnerable
+ *                            to any issues described in SAs that were published on or prior to this date.
+ *                            The time shall be in UTC and the encoding shall be compliant to
+ *                            ISO 8601 standard (YYYY-MM-DDThh:mm:ssZ).
+ * @property {string} tcbStatus - TCB level status
+ * @property {Array.<string>} [advisoryIDs] - Advisory IDs describing vulnerabilities that this TCB level of TDX Module is vulnerable to
+ */
+
+/**
+ * @typedef {Object} TdxModuleIdentity
+ * @property {string} id - Identifier of the TDX SEAM Module issued by Intel in the following format: “TDX <TDX Module Major SVN>”,
+ *                         where <TDX Module Major SVN> is a hex-encoded TDX’s Major SVN value (1 byte).
+ * @property {string} mrsigner - Base 16-encoded string representation of the measurement of a TDX SEAM module’s signer
+ *                               (48 bytes with SHA384 hash, value: 0’ed for Intel SEAM module).
+ * @property {string} attributes - Hex-encoded byte array (8 bytes) representing attributes "golden" value (upon applying mask)
+ *                                 for TDX SEAM module (value: 8 bytes set to 0x00).
+ * @property {string} attributesMask - Hex-encoded byte array (8 bytes) representing mask to be applied to TDX SEAM module’s
+ *                                     attributes value retrieved from the platform (value: 8 bytes set to 0xFF).
+ * @property {Array.<TdxModuleTcbLevel>} [tcbLevels] - Sorted list of supported TCB levels for given TDX SEAM Module
+ *                                                     encoded as a JSON array of TdxModuleTcbLevel objects.
+ */
+
+/**
  * @typedef {Object} TcbInfo
  * @property {string} id - identified of the TCB Info
  * @property {number} version - version of the structure
@@ -87,7 +112,8 @@
  *                                              changed when Intel updates the content of the TCB evaluation data set:
  *                                              TCB Info, QE Identity and QVE Identity
  * @property {TdxModule} [tdxModule] - representation of the TDX SEAM module
- * @property {Array.<TcbLevel>} tcbLevels
+ * @property {Array.<TdxModuleIdentity>} [tdxModuleIdentities]
+ * @property {Array.<TcbLevel>} [tcbLevels]
  */
 
 /**
