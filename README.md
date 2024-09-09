@@ -32,6 +32,8 @@ QVS for demonstation purposes can be quickly configured and run with self-signed
     - ```$ sudo sh ./get-docker.sh```
  - [jq](https://jqlang.github.io/jq/)
     - ```$ sudo apt-get install jq``` (for Debian/Ubuntu)
+ - [QVL](https://github.com/intel/SGX-TDX-DCAP-QuoteVerificationLibrary)
+   - ```$ git clone https://github.com/intel/SGX-TDX-DCAP-QuoteVerificationLibrary.git ../QVL```
 
 ### Build
  Execute ```./build.sh```. This script will build QVL, QVS and SSS.
@@ -55,7 +57,7 @@ Using docker builders:
  - [Docker](https://www.docker.com/) (tested with version 20.10.11)
 Without docker:
  - [Node.js](https://nodejs.org/en/) (tested with version 16.13.1) with `npm` and `cmake-js` addon
- - install prerequisites from [QVL](https://github.com/intel/SGX-TDX-DCAP-QuoteVerificationLibrary)
+ - download sources and install prerequisites from [QVL](https://github.com/intel/SGX-TDX-DCAP-QuoteVerificationLibrary)
 
 #### Install software dependencies
 For Ubuntu 18.04, the following command can be used to install all necessary software dependencies:
@@ -75,7 +77,7 @@ The build was tested on Ubuntu 18.04 and 20.04.
 
 Here, we assume that the [build prerequisites](#prerequisites-for-linux) are fulfilled. 
 
-Execute ```./build.sh```. This script will build QVL, QVS and finally will create Docker Images for QVS and SSS. 
+Execute ```./build.sh```. As the first argument you can provide path to QVL sources i.e. `./build.sh ../QVL` where `../QVL` is defualt. This script will build QVL, QVS and finally will create Docker Images for QVS and SSS. 
 As a result it creates two docker images: ```qvs:latest``` and ```sss:latest```
 
 Script will build:
