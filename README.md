@@ -206,7 +206,7 @@ curl --cacert ./configuration-default/certificates/qvs-cert.pem https://localhos
 | ------------ | ------------ | ------------ |
 |  QVS_ATTESTATION_REPORT_SIGNING_CA_CERTIFICATE |   | URL encoded CA certificate (in PEM format) of QVS_ATTESTATION_REPORT_SIGNING_CERTIFICATE. As part of chain it will be returned in `X-IASReport-Signing-Certificate` header to enable verifying report. |
 |  QVS_ATTESTATION_REPORT_SIGNING_CERTIFICATE |   |  URL encoded certificate (in PEM format) that Verification Crypto Service uses to sign reports. Also returned as part of chain in `X-IASReport-Signing-Certificate` header. |
-|  QVS_TRUSTED_ROOT_PUBLIC_KEY | 3059301306072a8648ce3d020106082a8648ce3d030107034200040ba9c4c0c0c86193a3fe23d6b02cda10a8bbd4e88e48b4458561a36e705525f567918e2edc88e40d860bd0cc4ee26aacc988e505a953558c453f6b0904ae7394  | Public key of CA certificate that is root for PCK certificate chain  |
+|  QVS_TRUSTED_ROOT_PUBLIC_KEY | \<root public key for https://api.portal.trustedservices.intel.com/provisioning-certification > | Subject Public Key Info of CA certificate that is root for PCK certificate chain  |
 
 ## API Documentation
 
