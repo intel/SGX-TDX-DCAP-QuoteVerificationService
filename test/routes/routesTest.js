@@ -60,7 +60,7 @@ class TestContext {
     async getTarget() {
         const self = this;
         return proxyquire('../../src/routes', {
-            'koa-router':                     createKoaRouterMock(self.koaRouter.use, self.koaRouter.routes),
+            '@koa/router':                    createKoaRouterMock(self.koaRouter.use, self.koaRouter.routes),
             './health':                       this.routerMock,
             './v1/verifyAttestationEvidence': this.routerMock
         });

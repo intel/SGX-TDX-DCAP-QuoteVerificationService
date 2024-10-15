@@ -139,7 +139,7 @@ module.exports = class ServerInit {
      * Starts HTTP/HTTPS server with service API
      * 
      * @param {number} port - port to listen on
-     * @param {KoaRouter} router - koa-router instance
+     * @param {KoaRouter} router - @koa/router instance
      * @param {string} serverType - HTTP or HTTPS
      *      
      */
@@ -169,7 +169,7 @@ module.exports = class ServerInit {
      * Starts HTTPS server with service API
      * 
      * @param {number} port - port to listen on
-     * @param {KoaRouter} router - koa-router instance
+     * @param {KoaRouter} router - @koa/router instance
      */
     async startHTTPSServer(port, router) {
         return this.__startServer(port, router, 'HTTPS');
@@ -179,7 +179,7 @@ module.exports = class ServerInit {
      * Starts plain HTTP server with only health endpoint available
      * 
      * @param {number} port - port to listen on
-     * @param {KoaRouter} router - koa-router instance
+     * @param {KoaRouter} router - @koa/router instance
      */
     async startHTTPServer(port, router) {
         return this.__startServer(port, router, 'HTTP');

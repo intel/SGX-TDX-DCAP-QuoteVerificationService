@@ -57,7 +57,7 @@ function requestControl(opts) {
                 }
             }
         }
-        const allowedArr = Object.keys(allowed); // allowedArr is almost copy pasted from koa-router's allowedMethods method
+        const allowedArr = Object.keys(allowed); // allowedArr is almost copy pasted from @koa/router's allowedMethods method
 
         if (matched.path.length === 0 || allowedArr.length === 0) {
             ctx.log.warn(`Path: ${path} is not allowed.`);

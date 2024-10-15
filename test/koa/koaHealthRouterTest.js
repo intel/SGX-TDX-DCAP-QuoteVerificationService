@@ -50,7 +50,7 @@ class TestContext {
 
     getTarget() {
         return proxyquire('../../src/koa/koaHealthRouter', {
-            'koa-router': RouterStub
+            '@koa/router': RouterStub
         });
     }
 }

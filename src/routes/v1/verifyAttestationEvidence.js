@@ -31,7 +31,7 @@
 
 'use strict';
 
-const Router = require('koa-router');
+const Router = require('@koa/router');
 
 const { verifyAttestationEvidence } = require('../../handlers/verifyAttestationEvidence');
 
