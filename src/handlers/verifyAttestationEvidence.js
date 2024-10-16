@@ -536,7 +536,7 @@ async function readTcbInfoAndIssuerChainFromResponse(response) {
     switch (response.status) {
     case STATUSES.STATUS_OK.httpCode:
         break;
-    case STATUSES.STATUS_TCB_NOT_FOUND.httpCode:
+    case STATUSES.STATUS_NOT_FOUND.httpCode:
         err = new Error(`Failed to retrieve required TcbInfo. PCS returned status: ${response.status}`);
         err.status = 400;
         throw err;
