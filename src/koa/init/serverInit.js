@@ -126,7 +126,7 @@ module.exports = class ServerInit {
             cert:               readFileSafely(this.serviceConfig.certFile, 'utf8'),
             ca:                 isMtls ? getCACertificatesSync(this.serviceConfig.caCertDirectories).map(file => readFileSafely(file, 'utf8')) : undefined,
             requestCert:        isMtls,
-            rejectUnauthorized: isMtls,
+            rejectUnauthorized: true,
             maxVersion:         tlsType.MAX_SECURE_PROTOCOL,
             minVersion:         tlsType.MIN_SECURE_PROTOCOL,
             ciphers:            tlsType.CIPHERS,

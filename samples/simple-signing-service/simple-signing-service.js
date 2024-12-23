@@ -63,7 +63,7 @@ const options = {
     cert:               httpsCert,
     ca:                 isMtls ? [fs.readFileSync(caCertPath)] : undefined,
     requestCert:        isMtls,
-    rejectUnauthorized: isMtls,
+    rejectUnauthorized: true,
 };
 
 router.get('/health', (ctx) => {
