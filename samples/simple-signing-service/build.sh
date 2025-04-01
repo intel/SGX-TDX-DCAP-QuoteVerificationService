@@ -31,5 +31,5 @@
 # Get absolute path to the script itself
 SSS_DIR="$(cd "$(dirname "$0")" || exit 1; pwd)"
 echo 'Building SSS docker image...'
-docker build "$SSS_DIR" -t sss
+docker build --build-arg REPO=${REPO:-""} "$SSS_DIR" -t sss
 

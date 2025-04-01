@@ -26,8 +26,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
+ARG REPO=""
 
-FROM node:lts-slim AS qvl-builder
+FROM ${REPO}node:lts-slim AS qvl-builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 # install QVL dependencies
@@ -56,7 +57,7 @@ COPY build/qvls /qvl
 WORKDIR /qvl
 RUN ./runUT -DBUILD_LOGS=ON
 
-FROM node:lts-slim AS qvs-builder
+FROM ${REPO}node:lts-slim AS qvs-builder
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
  && apt-get upgrade --assume-yes -o Dpkg::Options::="--force-confold" \
@@ -112,7 +113,7 @@ COPY --from=qvs-builder-debug /qvs/native /native
 COPY --from=qvs-builder /qvs/src/node_modules /src/node_modules
 COPY --from=qvs-builder /qvs/test/node_modules /test/node_modules
 
-FROM node:lts-slim as app
+FROM ${REPO}node:lts-slim as app
 
 LABEL description="Quote Verification Service"
 

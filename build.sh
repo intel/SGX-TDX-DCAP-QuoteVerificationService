@@ -82,11 +82,11 @@ fi
 
 # Build Docker Image
 function buildDocker() {
-  docker build --target artifacts --output="$SCRIPT_DIR" "$SCRIPT_DIR"
+  docker build --build-arg REPO=${REPO:-""} --target artifacts --output="$SCRIPT_DIR" "$SCRIPT_DIR"
   if [ "$DEBUG" = true ]; then
-    docker build --target debug-artifacts --output="$SCRIPT_DIR" "$SCRIPT_DIR"
+    docker build --build-arg REPO=${REPO:-""} --target debug-artifacts --output="$SCRIPT_DIR" "$SCRIPT_DIR"
   fi
-  docker build --target app "$SCRIPT_DIR" -t qvs
+  docker build --build-arg REPO=${REPO:-""} --target app "$SCRIPT_DIR" -t qvs
 }
 
 if ! buildDocker; then
