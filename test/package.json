@@ -2,9 +2,9 @@
     "name": "quoteverificationservice-test",
     "scripts": {
         "test": "nyc mocha './' --recursive --exclude 'node_modules/**/*' --exclude '?/**/*' --exclude 'build/**/*' --reporter 'node_modules/mocha-multi-reporters/index.js' --reporter-options 'configFile=../reporter_config.json'",
-        "lint-fix": "eslint --config ../.eslintrc --fix ..",
-        "lint": "eslint --config ../.eslintrc --format stylish --quiet ..",
-        "lint-report": "eslint --config ../.eslintrc --format checkstyle --output-file ../build/eslint_report.xml .."
+        "lint-fix": "ESLINT_USE_FLAT_CONFIG=false eslint --resolve-plugins-relative-to=. --config ../.eslintrc --fix ..",
+        "lint": "ESLINT_USE_FLAT_CONFIG=false eslint --resolve-plugins-relative-to=. --config ../.eslintrc --format stylish --quiet ..",
+        "lint-report": "ESLINT_USE_FLAT_CONFIG=false eslint --resolve-plugins-relative-to=. --config ../.eslintrc --format checkstyle --output-file ../build/eslint_report.xml .. || (cat ../build/eslint_report.xml ; exit 1)"
     },
     "version": "1.0.0",
     "license": "SEE LICENSE IN RESPECTIVE FILES",
@@ -34,7 +34,9 @@
     "devDependencies": {
         "chai": "^4.3.7",
         "cmake-js": "^7.2.1",
-        "eslint": "^8.39.0",
+        "eslint": "9.17.0",
+        "eslint-formatter-checkstyle": "^8.40.0",
+        "eslint-plugin-jsdoc": "^50.6.1",
         "mocha": "^10.2.0",
         "mocha-junit-reporter": "^2.2.0",
         "mocha-multi-reporters": "^1.5.1",

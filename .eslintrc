@@ -10,6 +10,9 @@
     },
     "extends": "eslint:recommended",
     "root": true,
+    "plugins": [
+        "jsdoc"
+    ],
     // Before changing any rule below, please consult documentation (http://eslint.org/docs/rules/)
     "rules": {
 
@@ -47,7 +50,7 @@
         "no-unsafe-finally"           : "error",   // disallow control flow statements in finally blocks
         "no-unsafe-negation"          : "error",
         "use-isnan"                   : "error",   // require calls to isNaN() when checking for NaN
-        "valid-jsdoc"                 : "warn",    // enforce valid JSDoc comments
+        "jsdoc/valid-types"           : "warn",    // enforce valid JSDoc comments
         "valid-typeof"                : "error",   // enforce comparing typeof expressions against valid strings
 
         // Best Practices
@@ -138,7 +141,7 @@
         "no-undef"                   : "error", // disallow the use of undeclared variables unless mentioned in /*global */ comments
         "no-undef-init"              : "error", // disallow initializing variables to undefined
         "no-undefined"               : "off",   // disallow the use of undefined as an identifier
-        "no-unused-vars"             : [ "error", {  "varsIgnorePattern": "^_" } ],  // disallow unused variables
+        "no-unused-vars"             : [ "error", {  "varsIgnorePattern": "^_", "caughtErrors": "none" } ],  // disallow unused variables //TODO: consider removing "caughtErrors"
         "no-use-before-define"       : [ "error", { "functions": false, "classes": false } ],  // disallow the use of variables before they are defined
 
         // Node.js and CommonJS
@@ -227,7 +230,7 @@
         "padding-line-between-statements" : "error", // require or disallow padding lines between statements
         "quote-props"                     : [ "error", "consistent-as-needed", { "keywords": true } ],   // require quotes around object literal property names
         "quotes"                          : [ "error", "single", { "avoidEscape": true } ],   // enforce the consistent use of either backticks, double, or single quotes
-        "require-jsdoc"                   : [ "warn", { "require": { "FunctionDeclaration": true, "MethodDefinition": false, "ClassDeclaration": false } } ],   // require JSDoc comments   //TODO: it should be enabled
+        "jsdoc/require-jsdoc"             : [ "warn", { "require": { "FunctionDeclaration": true, "MethodDefinition": false, "ClassDeclaration": false } } ],   // require JSDoc comments   //TODO: it should be enabled
         "semi"                            : [ "error", "always" ],   // require or disallow semicolons instead of ASI
         "semi-spacing"                    : "error", // enforce consistent spacing before and after semicolons
         "sort-vars"                       : "off",   // require variables within the same declaration block to be sorted
