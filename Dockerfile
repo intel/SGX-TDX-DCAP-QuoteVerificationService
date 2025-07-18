@@ -45,8 +45,10 @@ RUN apt-get update \
  && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
  && wget --progress=dot:giga https://github.com/openssl/openssl/releases/download/openssl-3.0.8/openssl-3.0.8.tar.gz -O /tmp/openssl.tar.gz \
  && echo "6c13d2bf38fdf31eac3ce2a347073673f5d63263398f1f69d0df4a41253e4b3e /tmp/openssl.tar.gz" | sha256sum --check \
- && mkdir /tmp/openssl && cd /tmp/openssl \
- && tar -xzf /tmp/openssl.tar.gz --strip-components=1 -C /tmp/openssl \
+ && mkdir /tmp/openssl
+
+WORKDIR /tmp/openssl
+RUN tar -xzf /tmp/openssl.tar.gz --strip-components=1 -C /tmp/openssl \
  && ./Configure enable-fips && make -j${nproc} \
  && mkdir /tmp/fips && cp /tmp/openssl/providers/fips.so /tmp/fips && cp /tmp/openssl/providers/fipsmodule.cnf /tmp/fips \
  && rm -rf /tmp/openssl.tar.gz /tmp/openssl
