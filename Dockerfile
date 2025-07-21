@@ -48,10 +48,10 @@ RUN apt-get update \
  && mkdir /tmp/openssl
 
 WORKDIR /tmp/openssl
-RUN tar -xzf /tmp/openssl.tar.gz --strip-components=1 -C /tmp/openssl \
- && ./Configure enable-fips && make -j${nproc} \
- && mkdir /tmp/fips && cp /tmp/openssl/providers/fips.so /tmp/fips && cp /tmp/openssl/providers/fipsmodule.cnf /tmp/fips \
- && rm -rf /tmp/openssl.tar.gz /tmp/openssl
+RUN tar -xzf "/tmp/openssl.tar.gz" --strip-components=1 -C "/tmp/openssl" \
+ && ./Configure enable-fips && make -j"$(nproc)" \
+ && mkdir "/tmp/fips" && cp "/tmp/openssl/providers/fips.so" "/tmp/fips" && cp "/tmp/openssl/providers/fipsmodule.cnf" "/tmp/fips" \
+ && rm -rf "/tmp/openssl.tar.gz" "/tmp/openssl"
 
 # copy QVL sources
 COPY build/qvls /qvl
