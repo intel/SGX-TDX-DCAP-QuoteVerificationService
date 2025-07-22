@@ -7,6 +7,15 @@ It can be used as a part of [SGX attestation](https://www.intel.com/content/www/
 
 Service checks, that provided evidence comes from a genuine, non-revoked SGX/TDX capable platform on given TCB level and generates appriopriate JSON report. Based on that report and by verifying additional evidences (like: MRSIGNER, MRENCLAVE) client can decide whether to trust this enclave or not. 
 
+## Deprecation notice
+
+This repository is going to be archived on 1st of October 2025.
+
+After that, repository will remain available in a read-only state for historical reference, Intel will not be addressing issues, reviewing pull requests, or making any updates going forward.
+
+If you are interested in building your own attestation infrastructure please refer to below solutions:
+- [Intel SGX DCAP with ECDSA-based attestation](https://www.intel.com/content/www/us/en/developer/tools/software-guard-extensions/attestation-services.html)
+- [TrusTEE](https://github.com/confidential-containers/trustee)
 
 ### Service architecture overview
 
