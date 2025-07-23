@@ -31,6 +31,6 @@
         "z-schema": "^6.0.2"
     },
     "devDependencies": {
-        "cmake-js": "^7.2.1"
+        "cmake-js": "^7.3.1"
     }
 }
