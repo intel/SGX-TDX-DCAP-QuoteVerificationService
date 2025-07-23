@@ -26,8 +26,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
+ARG REPO=""
 
-FROM node:lts-slim AS qvl-builder
+FROM ${REPO}node:lts-slim AS qvl-builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 # install QVL dependencies
@@ -44,11 +45,13 @@ RUN apt-get update \
  && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
  && wget --progress=dot:giga https://github.com/openssl/openssl/releases/download/openssl-3.0.8/openssl-3.0.8.tar.gz -O /tmp/openssl.tar.gz \
  && echo "6c13d2bf38fdf31eac3ce2a347073673f5d63263398f1f69d0df4a41253e4b3e /tmp/openssl.tar.gz" | sha256sum --check \
- && mkdir /tmp/openssl && cd /tmp/openssl \
- && tar -xzf /tmp/openssl.tar.gz --strip-components=1 -C /tmp/openssl \
- && ./Configure enable-fips && make -j${nproc} \
- && mkdir /tmp/fips && cp /tmp/openssl/providers/fips.so /tmp/fips && cp /tmp/openssl/providers/fipsmodule.cnf /tmp/fips \
- && rm -rf /tmp/openssl.tar.gz /tmp/openssl
+ && mkdir /tmp/openssl
+
+WORKDIR /tmp/openssl
+RUN tar -xzf "/tmp/openssl.tar.gz" --strip-components=1 -C "/tmp/openssl" \
+ && ./Configure enable-fips && make -j"$(nproc)" \
+ && mkdir "/tmp/fips" && cp "/tmp/openssl/providers/fips.so" "/tmp/fips" && cp "/tmp/openssl/providers/fipsmodule.cnf" "/tmp/fips" \
+ && rm -rf "/tmp/openssl.tar.gz" "/tmp/openssl"
 
 # copy QVL sources
 COPY build/qvls /qvl
@@ -56,7 +59,7 @@ COPY build/qvls /qvl
 WORKDIR /qvl
 RUN ./runUT -DBUILD_LOGS=ON
 
-FROM node:lts-slim AS qvs-builder
+FROM ${REPO}node:lts-slim AS qvs-builder
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
  && apt-get upgrade --assume-yes -o Dpkg::Options::="--force-confold" \
@@ -112,7 +115,7 @@ COPY --from=qvs-builder-debug /qvs/native /native
 COPY --from=qvs-builder /qvs/src/node_modules /src/node_modules
 COPY --from=qvs-builder /qvs/test/node_modules /test/node_modules
 
-FROM node:lts-slim as app
+FROM ${REPO}node:lts-slim as app
 
 LABEL description="Quote Verification Service"
 

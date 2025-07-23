@@ -26,8 +26,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
+ARG REPO=""
 
-FROM node:lts-slim
+FROM ${REPO}node:lts-slim
 
 LABEL description="Simple Signing Service"
 

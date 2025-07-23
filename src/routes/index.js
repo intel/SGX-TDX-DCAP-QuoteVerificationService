@@ -31,7 +31,7 @@
 
 'use strict';
 
-const Router = require('koa-router');
+const Router = require('@koa/router');
 
 /* Place to import all nested routers below */
 const healthRouter = require('./health').createRouter();

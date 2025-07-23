@@ -31,35 +31,21 @@
 
 'use strict';
 
-class SgxError extends Error {
+class GenericError extends Error {
     constructor(message) {
         super(message);
         this.name = this.constructor.name;
     }
 }
 
-class TcbOutOfDate extends SgxError {}
-class FmspNotFound extends SgxError {}
-class DeviceKeyNotFound extends SgxError {}
-class PpidNotFound extends SgxError {}
-class EventDataNotFound extends SgxError {}
-class EnclaveTcbNotFound extends SgxError {}
-class EnclaveIdentityNotFound extends SgxError {}
-class InvalidPlatformManifest extends SgxError {}
-class IncompatiblePackage extends SgxError {}
-class PackageNotFound extends SgxError {}
-class InvalidOrRevokedPackage extends SgxError {}
-class InvalidRegistrationServer extends SgxError {}
-class InvalidRequestSyntax extends SgxError {}
-
-class InternalError extends SgxError {
+class InternalError extends GenericError {
     constructor(message, cause) {
         super(message);
         this.cause = () => cause;
     }
 }
 
-class InternalErrorWithNoRetryStatus extends SgxError {
+class InternalErrorWithNoRetryStatus extends GenericError {
     constructor(body) {
         super(undefined);
         this.body = body;
@@ -67,19 +53,7 @@ class InternalErrorWithNoRetryStatus extends SgxError {
 }
 
 module.exports = {
+    GenericError,
     InternalError,
     InternalErrorWithNoRetryStatus,
-    TcbOutOfDate,
-    PpidNotFound,
-    DeviceKeyNotFound,
-    FmspNotFound,
-    EnclaveTcbNotFound,
-    EnclaveIdentityNotFound,
-    EventDataNotFound,
-    InvalidPlatformManifest,
-    IncompatiblePackage,
-    PackageNotFound,
-    InvalidOrRevokedPackage,
-    InvalidRegistrationServer,
-    InvalidRequestSyntax
 };

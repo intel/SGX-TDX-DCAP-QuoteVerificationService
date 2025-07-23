@@ -1,3 +1,15 @@
+## Deprecation notice
+
+This repository is going to be archived on 1st of October 2025.
+
+After that, repository will remain available in a read-only state for historical reference, Intel will not be addressing issues, reviewing pull requests, or making any updates going forward.
+
+If you are interested in building your own attestation infrastructure please refer to below solutions:
+- [Intel SGX DCAP with ECDSA-based attestation](https://www.intel.com/content/www/us/en/developer/tools/software-guard-extensions/attestation-services.html)
+- [TrusTEE](https://github.com/confidential-containers/trustee)
+
+---
+
 # Intel® Software Guard Extensions and Intel® Trust Domain Extensions Data Center Attestation Primitives (Intel® SGX and Intel® TDX DCAP) Quote Verification Service
 
 ## Introduction
@@ -6,7 +18,6 @@ Quote Verification Service is a stateless server endpoint implementation that ve
 It can be used as a part of [SGX attestation](https://www.intel.com/content/www/us/en/developer/tools/software-guard-extensions/attestation-services.html) process.
 
 Service checks, that provided evidence comes from a genuine, non-revoked SGX/TDX capable platform on given TCB level and generates appriopriate JSON report. Based on that report and by verifying additional evidences (like: MRSIGNER, MRENCLAVE) client can decide whether to trust this enclave or not. 
-
 
 ### Service architecture overview
 
@@ -32,6 +43,8 @@ QVS for demonstation purposes can be quickly configured and run with self-signed
     - ```$ sudo sh ./get-docker.sh```
  - [jq](https://jqlang.github.io/jq/)
     - ```$ sudo apt-get install jq``` (for Debian/Ubuntu)
+ - [QVL](https://github.com/intel/SGX-TDX-DCAP-QuoteVerificationLibrary)
+   - ```$ git clone https://github.com/intel/SGX-TDX-DCAP-QuoteVerificationLibrary.git ../QVL```
 
 ### Build
  Execute ```./build.sh```. This script will build QVL, QVS and SSS.
@@ -55,7 +68,7 @@ Using docker builders:
  - [Docker](https://www.docker.com/) (tested with version 20.10.11)
 Without docker:
  - [Node.js](https://nodejs.org/en/) (tested with version 16.13.1) with `npm` and `cmake-js` addon
- - install prerequisites from [QVL](https://github.com/intel/SGX-TDX-DCAP-QuoteVerificationLibrary)
+ - download sources and install prerequisites from [QVL](https://github.com/intel/SGX-TDX-DCAP-QuoteVerificationLibrary)
 
 #### Install software dependencies
 For Ubuntu 18.04, the following command can be used to install all necessary software dependencies:
@@ -75,7 +88,7 @@ The build was tested on Ubuntu 18.04 and 20.04.
 
 Here, we assume that the [build prerequisites](#prerequisites-for-linux) are fulfilled. 
 
-Execute ```./build.sh```. This script will build QVL, QVS and finally will create Docker Images for QVS and SSS. 
+Execute ```./build.sh```. As the first argument you can provide path to QVL sources i.e. `./build.sh ../QVL` where `../QVL` is defualt. This script will build QVL, QVS and finally will create Docker Images for QVS and SSS. 
 As a result it creates two docker images: ```qvs:latest``` and ```sss:latest```
 
 Script will build:
@@ -204,7 +217,7 @@ curl --cacert ./configuration-default/certificates/qvs-cert.pem https://localhos
 | ------------ | ------------ | ------------ |
 |  QVS_ATTESTATION_REPORT_SIGNING_CA_CERTIFICATE |   | URL encoded CA certificate (in PEM format) of QVS_ATTESTATION_REPORT_SIGNING_CERTIFICATE. As part of chain it will be returned in `X-IASReport-Signing-Certificate` header to enable verifying report. |
 |  QVS_ATTESTATION_REPORT_SIGNING_CERTIFICATE |   |  URL encoded certificate (in PEM format) that Verification Crypto Service uses to sign reports. Also returned as part of chain in `X-IASReport-Signing-Certificate` header. |
-|  QVS_TRUSTED_ROOT_PUBLIC_KEY | 3059301306072a8648ce3d020106082a8648ce3d030107034200040ba9c4c0c0c86193a3fe23d6b02cda10a8bbd4e88e48b4458561a36e705525f567918e2edc88e40d860bd0cc4ee26aacc988e505a953558c453f6b0904ae7394  | Public key of CA certificate that is root for PCK certificate chain  |
+|  QVS_TRUSTED_ROOT_PUBLIC_KEY | \<root public key for https://api.portal.trustedservices.intel.com/provisioning-certification > | Subject Public Key Info of CA certificate that is root for PCK certificate chain  |
 
 ## API Documentation
 

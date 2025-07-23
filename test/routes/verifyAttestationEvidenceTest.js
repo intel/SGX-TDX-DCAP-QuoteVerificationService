@@ -54,7 +54,7 @@ class TestContext {
         const self = this;
         return proxyquire('../../src/routes/v1/verifyAttestationEvidence', {
             '../../handlers/verifyAttestationEvidence': this.verifyAttestationEvidenceHandler,
-            'koa-router':
+            '@koa/router':
                 createKoaRouterMock(
                     self.koaRouter.use,
                     self.koaRouter.routes,

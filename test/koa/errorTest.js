@@ -35,27 +35,6 @@ const errors = require('../../src/koa/errors');
 const assert = require('assert');
 
 describe('Error test', () => {
-    it('Should call TcbOutOfDate error with expected message', () => {
-        // GIVEN
-        const msg = 'TcbOutOfDate error';
-        // WHEN
-        const error = new errors.TcbOutOfDate(msg);
-
-        // THEN
-        assert.strictEqual(error.name, 'TcbOutOfDate');
-        assert.strictEqual(error.message, msg);
-    });
-
-    it('Should call PpidNotFound error with expected message', () => {
-        // GIVEN
-        const msg = 'PpidNotFound error';
-        // WHEN
-        const error = new errors.PpidNotFound(msg);
-
-        // THEN
-        assert.strictEqual(error.name, 'PpidNotFound');
-        assert.strictEqual(error.message, msg);
-    });
 
     it('Should call InternalError error with expected message', () => {
         // GIVEN
@@ -67,61 +46,6 @@ describe('Error test', () => {
         assert.strictEqual(error.name, 'InternalError');
         assert.strictEqual(error.message, msg);
         assert.strictEqual(typeof error.cause(), 'undefined');
-    });
-
-    it('Should call FmspNotFound error with expected message', () => {
-        // GIVEN
-        const msg = 'FmspNotFound error';
-        // WHEN
-        const error = new errors.FmspNotFound(msg);
-
-        // THEN
-        assert.strictEqual(error.name, 'FmspNotFound');
-        assert.strictEqual(error.message, msg);
-    });
-
-    it('Should call DeviceKeyNotFound error with expected message', () => {
-        // GIVEN
-        const msg = 'DeviceKeyNotFound error';
-        // WHEN
-        const error = new errors.DeviceKeyNotFound(msg);
-
-        // THEN
-        assert.strictEqual(error.name, 'DeviceKeyNotFound');
-        assert.strictEqual(error.message, msg);
-    });
-
-    it('Should call EventDataNotFound error with expected message', () => {
-        // GIVEN
-        const msg = 'EventDataNotFound error';
-        // WHEN
-        const error = new errors.EventDataNotFound(msg);
-
-        // THEN
-        assert.strictEqual(error.name, 'EventDataNotFound');
-        assert.strictEqual(error.message, msg);
-    });
-
-    it('Should call EnclaveTcbNotFound error with expected message', () => {
-        // GIVEN
-        const msg = 'EnclaveTcbNotFound error';
-        // WHEN
-        const error = new errors.EnclaveTcbNotFound(msg);
-
-        // THEN
-        assert.strictEqual(error.name, 'EnclaveTcbNotFound');
-        assert.strictEqual(error.message, msg);
-    });
-
-    it('Should call EnclaveIdentityNotFound error with expected message', () => {
-        // GIVEN
-        const msg = 'EnclaveIdentityNotFound error';
-        // WHEN
-        const error = new errors.EnclaveIdentityNotFound(msg);
-
-        // THEN
-        assert.strictEqual(error.name, 'EnclaveIdentityNotFound');
-        assert.strictEqual(error.message, msg);
     });
 
     it('Should call InternalErrorWithNoRetryStatus error with expected message', () => {

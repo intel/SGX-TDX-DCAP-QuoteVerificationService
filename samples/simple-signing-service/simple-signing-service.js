@@ -36,9 +36,8 @@ const https = require('https');
 const http = require('http');
 const fs = require('fs');
 const Koa = require('koa');
-const Router = require('koa-router');
-const koaBody = require('koa-body');
-const unparsed = require('koa-body/unparsed');
+const Router = require('@koa/router');
+const { koaBody } = require('koa-body');
 const crypto = require('crypto');
 
 const app = new Koa();
@@ -63,7 +62,7 @@ const options = {
     cert:               httpsCert,
     ca:                 isMtls ? [fs.readFileSync(caCertPath)] : undefined,
     requestCert:        isMtls,
-    rejectUnauthorized: isMtls,
+    rejectUnauthorized: true,
 };
 
 router.get('/health', (ctx) => {
@@ -103,7 +102,7 @@ router.post('/sign/attestation-verification-report', (ctx) => {
             description: 'Signature of the request body'
         }
     */
-    const rawBodyToSign = ctx.request.body[unparsed];
+    const rawBodyToSign = ctx.request.body[Symbol.for('unparsedBody')];
     console.log('[Request]' + rawBodyToSign);
 
     const signer = crypto.createSign(algorithm);
