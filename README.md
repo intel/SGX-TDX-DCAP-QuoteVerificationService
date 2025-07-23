@@ -117,7 +117,7 @@ or:
 docker run --network host --env QVS_VCS_CLIENT_HOST=localhost --env QVS_VCS_CLIENT_PORT=8797 --env QVS_ATTESTATION_REPORT_SIGNING_CERTIFICATE=SIGNING_KEY_CERTIFCATE_URL_ENCODED -it qvs:latest
 ```
 
-### Healtcheck
+### Healthcheck
 ```bash
 curl --cacert ./configuration-default/certificates/qvs-cert.pem https://localhost:8799/health
 ```
