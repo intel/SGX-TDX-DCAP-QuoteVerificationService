@@ -34,7 +34,7 @@
     "devDependencies": {
         "chai": "^5.2.1",
         "cmake-js": "^7.3.1",
-        "eslint": "9.31.0",
+        "eslint": "9.32.0",
         "eslint-formatter-checkstyle": "^8.40.0",
         "eslint-plugin-jsdoc": "^51.4.1",
         "mocha": "^11.7.1",
