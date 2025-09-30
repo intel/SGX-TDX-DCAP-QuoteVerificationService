@@ -32,7 +32,7 @@
         "z-schema": "^6.0.2"
     },
     "devDependencies": {
-        "chai": "^5.2.1",
+        "chai": "^6.2.0",
         "cmake-js": "^7.3.1",
         "eslint": "9.31.0",
         "eslint-formatter-checkstyle": "^8.40.0",
