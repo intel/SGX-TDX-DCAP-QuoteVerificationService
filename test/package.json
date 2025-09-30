@@ -37,7 +37,7 @@
         "eslint": "9.31.0",
         "eslint-formatter-checkstyle": "^8.40.0",
         "eslint-plugin-jsdoc": "^51.4.1",
-        "mocha": "^11.7.1",
+        "mocha": "^11.7.3",
         "mocha-junit-reporter": "^2.2.1",
         "mocha-multi-reporters": "^1.5.1",
         "nyc": "^17.1.0",
